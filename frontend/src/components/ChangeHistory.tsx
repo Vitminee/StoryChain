@@ -1,7 +1,7 @@
 'use client'
 
 import { useStore } from '@/stores/useStore'
-import { Clock, Plus, Minus, Edit3 } from 'lucide-react'
+import { ClockIcon, PlusIcon, MinusIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function ChangeHistory() {
@@ -64,13 +64,13 @@ export default function ChangeHistory() {
   const getChangeIcon = (changeType: string) => {
     switch (changeType) {
       case 'insert':
-        return <Plus className="w-3 h-3 text-green-600" />
+        return <PlusIcon className="w-3 h-3 text-green-600" />
       case 'delete':
-        return <Minus className="w-3 h-3 text-red-600" />
+        return <MinusIcon className="w-3 h-3 text-red-600" />
       case 'replace':
-        return <Edit3 className="w-3 h-3 text-blue-600" />
+        return <PencilSquareIcon className="w-3 h-3 text-blue-600" />
       default:
-        return <Edit3 className="w-3 h-3 text-gray-600" />
+        return <PencilSquareIcon className="w-3 h-3 text-gray-600" />
     }
   }
 
@@ -99,7 +99,7 @@ export default function ChangeHistory() {
     <aside className="w-80 bg-gray-50 border-l border-gray-200 flex flex-col">
       <div className="p-4 border-b border-gray-200">
         <h2 className="font-semibold text-gray-900 flex items-center">
-          <Clock className="w-4 h-4 mr-2" />
+          <ClockIcon className="w-4 h-4 mr-2" />
           Recent Changes
         </h2>
         <p className="text-xs text-gray-500 mt-1">
@@ -110,7 +110,7 @@ export default function ChangeHistory() {
       <div className="flex-1 overflow-y-auto">
         {changes.length === 0 ? (
           <div className="text-center py-8 px-4 text-gray-500 text-sm">
-            <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <ClockIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No changes yet</p>
             <p className="text-xs mt-1">Start editing to see history</p>
           </div>

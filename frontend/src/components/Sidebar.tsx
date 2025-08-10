@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '@/stores/useStore'
-import { ChevronDown, ChevronRight, Hash } from 'lucide-react'
+import { ChevronDownIcon, ChevronRightIcon, HashtagIcon } from '@heroicons/react/24/outline'
 
 interface HeadingNode {
   id: string
@@ -141,16 +141,16 @@ export default function Sidebar() {
               className="mr-1 p-0.5 hover:bg-gray-200 rounded"
             >
               {isExpanded ? (
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDownIcon className="w-3 h-3" />
               ) : (
-                <ChevronRight className="w-3 h-3" />
+                <ChevronRightIcon className="w-3 h-3" />
               )}
             </button>
           ) : (
             <div className="w-4 mr-1" />
           )}
           
-          <Hash className={`w-3 h-3 mr-2 text-gray-400 ${node.level > 3 ? 'opacity-60' : ''}`} />
+          <HashtagIcon className={`w-3 h-3 mr-2 text-gray-400 ${node.level > 3 ? 'opacity-60' : ''}`} />
           
           <span className="truncate flex-1 text-gray-700">
             {node.text}
@@ -178,7 +178,7 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto p-2">
         {headingTree.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">
-            <Hash className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <HashtagIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No headings found</p>
             <p className="text-xs mt-1">Add # headings to see outline</p>
           </div>

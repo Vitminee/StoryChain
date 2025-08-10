@@ -15,7 +15,7 @@ A real-time collaborative text editor with markdown support and 30-second cooldo
 
 ## Architecture
 
-- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, and Zustand for state management
+- **Frontend**: Next.js 15 with TypeScript, Tailwind CSS, Zustand for state management, and Heroicons
 - **Backend**: Go with Gin, WebSocket support, and PostgreSQL
 - **Database**: PostgreSQL with automatic migrations
 - **Real-time**: WebSocket connections for live collaboration

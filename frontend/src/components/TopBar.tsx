@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useStore } from '@/stores/useStore'
-import { Edit3, Users, FileText, Clock } from 'lucide-react'
+import { PencilSquareIcon, UsersIcon, DocumentTextIcon, ClockIcon } from '@heroicons/react/24/outline'
 
 interface TopBarProps {
   isConnected: boolean
@@ -65,7 +65,7 @@ export default function TopBar({ isConnected }: TopBarProps) {
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
       <div className="flex items-center space-x-6">
         <div className="flex items-center space-x-2">
-          <Edit3 className="w-6 h-6 text-blue-600" />
+          <PencilSquareIcon className="w-6 h-6 text-blue-600" />
           <h1 className="text-xl font-bold text-gray-900">StoryChain</h1>
         </div>
         
@@ -77,20 +77,20 @@ export default function TopBar({ isConnected }: TopBarProps) {
       <div className="flex items-center space-x-6">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center space-x-1">
-            <FileText className="w-4 h-4" />
+            <DocumentTextIcon className="w-4 h-4" />
             <span className="font-medium">{stats.total_edits}</span>
             <span className="text-gray-500">edits</span>
           </div>
           
           <div className="flex items-center space-x-1">
-            <Edit3 className="w-4 h-4" />
+            <PencilSquareIcon className="w-4 h-4" />
             <span className="font-medium">{stats.unique_users}</span>
             <span className="text-gray-500">editors</span>
           </div>
           
           <div className="flex items-center space-x-1">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <Users className="w-4 h-4" />
+            <UsersIcon className="w-4 h-4" />
             <span className="font-medium">{stats.online_count}</span>
             <span className="text-gray-500">online</span>
           </div>
@@ -99,7 +99,7 @@ export default function TopBar({ isConnected }: TopBarProps) {
         <div className="flex items-center space-x-3">
           {cooldownSeconds > 0 && (
             <div className="flex items-center space-x-1 text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-              <Clock className="w-4 h-4" />
+              <ClockIcon className="w-4 h-4" />
               <span className="font-medium">{cooldownSeconds}s</span>
             </div>
           )}
