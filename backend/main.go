@@ -26,6 +26,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := database.RunMigrations(db); err != nil {
+		log.Printf("Migration error: %v", err)
+	}
+
 	hub := websocket.NewHub()
 	go hub.Run()
 

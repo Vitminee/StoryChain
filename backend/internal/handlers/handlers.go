@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
+	"regexp"
 	"time"
 
 	"storychain-backend/internal/models"
@@ -156,5 +157,14 @@ func (h *Handler) getStats(c *gin.Context) {
 }
 
 func containsLinks(content string) bool {
-	return false
+	urlRegex := `(?i)https?://[^\s<>"{}|\\^` + "`" + `\[\]]+|www\.[^\s<>"{}|\\^` + "`" + `\[\]]+|ftp://[^\s<>"{}|\\^` + "`" + `\[\]]+`
+	emailRegex := `\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b`
+	
+	matched, _ := regexp.MatchString(urlRegex, content)
+	if matched {
+		return true
+	}
+	
+	matched, _ = regexp.MatchString(emailRegex, content)
+	return matched
 }
