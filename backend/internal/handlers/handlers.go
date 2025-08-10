@@ -104,6 +104,70 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		return
 	}
 
+	// First, get the current document content
+	var currentContent string
+	err = h.db.QueryRow("SELECT COALESCE(content, '') FROM documents WHERE id = $1", documentID).Scan(&currentContent)
+	if err != nil {
+		log.Printf("Failed to get current document content: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
+		return
+	}
+
+	// Calculate the new document content based on the change
+	var newDocumentContent string
+	switch change.ChangeType {
+	case "insert":
+		beforeText := ""
+		afterText := ""
+		if change.Position <= len(currentContent) {
+			beforeText = currentContent[:change.Position]
+			afterText = currentContent[change.Position:]
+		} else {
+			beforeText = currentContent
+		}
+		newDocumentContent = beforeText + change.Content + afterText
+	case "delete":
+		beforeText := ""
+		afterText := ""
+		if change.Position < len(currentContent) {
+			beforeText = currentContent[:change.Position]
+			endPos := change.Position + change.Length
+			if endPos <= len(currentContent) {
+				afterText = currentContent[endPos:]
+			}
+		} else {
+			beforeText = currentContent
+		}
+		newDocumentContent = beforeText + afterText
+	case "replace":
+		beforeText := ""
+		afterText := ""
+		if change.Position < len(currentContent) {
+			beforeText = currentContent[:change.Position]
+			endPos := change.Position + change.Length
+			if endPos <= len(currentContent) {
+				afterText = currentContent[endPos:]
+			}
+		} else {
+			beforeText = currentContent
+		}
+		newDocumentContent = beforeText + change.Content + afterText
+	default:
+		newDocumentContent = currentContent
+	}
+
+	// Update the document content
+	_, err = h.db.Exec(
+		"UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3",
+		newDocumentContent, time.Now(), documentID,
+	)
+	if err != nil {
+		log.Printf("Failed to update document content: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update document"})
+		return
+	}
+
+	// Save the change to the changes table
 	_, err = h.db.Exec(
 		`INSERT INTO changes (id, document_id, user_id, user_name, change_type, content, position, length, timestamp)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -112,6 +176,7 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	)
 
 	if err != nil {
+		log.Printf("Failed to save change: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save change"})
 		return
 	}

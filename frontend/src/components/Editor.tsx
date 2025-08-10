@@ -62,9 +62,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const handleEdit = async (newContent: string) => {
-    console.log('handleEdit called with:', newContent, 'original:', originalContent)
     if (newContent === originalContent) {
-      console.log('No change detected, exiting editing mode')
       setIsEditing(false)
       return
     }
@@ -116,7 +114,6 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    console.log('Key pressed:', e.key, 'editingContent:', editingContent)
     if (e.key === 'Enter') {
       e.preventDefault()
       handleEdit(editingContent)
@@ -149,10 +146,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
             type="text"
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
-            onBlur={() => {
-              console.log('Input blur event, editingContent:', editingContent)
-              handleEdit(editingContent)
-            }}
+            onBlur={() => handleEdit(editingContent)}
             onKeyDown={handleKeyPress}
             className="inline-block border border-blue-500 bg-blue-50 px-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
             style={{ minWidth: `${Math.max(40, editingContent.length * 10 + 20)}px`, width: `${Math.max(40, editingContent.length * 10 + 20)}px` }}
