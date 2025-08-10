@@ -1,0 +1,3 @@
+-- Re-add foreign key constraints (this would require users table to be populated)
+-- ALTER TABLE changes ADD CONSTRAINT changes_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+-- ALTER TABLE user_cooldowns ADD CONSTRAINT user_cooldowns_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;

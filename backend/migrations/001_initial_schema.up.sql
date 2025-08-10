@@ -18,7 +18,7 @@ CREATE TABLE users (
 CREATE TABLE changes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
     user_name VARCHAR(255) NOT NULL,
     change_type VARCHAR(50) NOT NULL, -- 'insert', 'delete', 'replace'
     content TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE changes (
 );
 
 CREATE TABLE user_cooldowns (
-    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID PRIMARY KEY,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 

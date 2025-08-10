@@ -120,6 +120,7 @@ func (h *Handler) getChanges(c *gin.Context) {
 		docID,
 	)
 	if err != nil {
+		log.Printf("Failed to query changes: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve changes"})
 		return
 	}
