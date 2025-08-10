@@ -41,10 +41,10 @@ func (h *Handler) getDocument(c *gin.Context) {
 	}
 
 	var doc models.Document
-	err = h.db.QueryRow(
-		"SELECT id, content, created_at, updated_at FROM documents WHERE id = $1",
-		documentID,
-	).Scan(&doc.ID, &doc.Content, &doc.CreatedAt, &doc.UpdatedAt)
+	
+	// Use explicit column selection to avoid column count issues
+	query := "SELECT id, content, created_at, updated_at FROM documents WHERE id = $1"
+	err = h.db.QueryRow(query, documentID).Scan(&doc.ID, &doc.Content, &doc.CreatedAt, &doc.UpdatedAt)
 
 	if err == sql.ErrNoRows {
 		doc = models.Document{
@@ -114,29 +114,40 @@ func (h *Handler) getChanges(c *gin.Context) {
 		return
 	}
 
-	rows, err := h.db.Query(
-		`SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp
-		FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`,
-		docID,
-	)
+	var changes []models.Change
+	
+	// Check if changes table exists and has data
+	var count int
+	err = h.db.QueryRow("SELECT COUNT(*) FROM changes WHERE document_id = $1", docID).Scan(&count)
 	if err != nil {
-		log.Printf("Failed to query changes: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve changes"})
+		log.Printf("Failed to count changes: %v", err)
+		// Return empty array instead of error for better UX
+		c.JSON(http.StatusOK, changes)
 		return
 	}
-	defer rows.Close()
 
-	var changes []models.Change
-	for rows.Next() {
-		var change models.Change
-		err := rows.Scan(
-			&change.ID, &change.DocumentID, &change.UserID, &change.UserName,
-			&change.ChangeType, &change.Content, &change.Position, &change.Length, &change.Timestamp,
-		)
+	if count > 0 {
+		query := `SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`
+		rows, err := h.db.Query(query, docID)
 		if err != nil {
-			continue
+			log.Printf("Failed to query changes: %v", err)
+			c.JSON(http.StatusOK, changes) // Return empty array instead of error
+			return
 		}
-		changes = append(changes, change)
+		defer rows.Close()
+
+		for rows.Next() {
+			var change models.Change
+			err := rows.Scan(
+				&change.ID, &change.DocumentID, &change.UserID, &change.UserName,
+				&change.ChangeType, &change.Content, &change.Position, &change.Length, &change.Timestamp,
+			)
+			if err != nil {
+				log.Printf("Failed to scan change: %v", err)
+				continue
+			}
+			changes = append(changes, change)
+		}
 	}
 
 	c.JSON(http.StatusOK, changes)

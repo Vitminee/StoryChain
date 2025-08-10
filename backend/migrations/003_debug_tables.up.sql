@@ -1,0 +1,2 @@
+-- This migration will show us what tables exist and their structure
+-- Run \d documents and \d changes in psql to see the actual schema
