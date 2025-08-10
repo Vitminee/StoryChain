@@ -28,6 +28,7 @@ export default function Layout() {
           fetchStats()
         ])
 
+        console.log('Document loaded:', document.content?.length || 0, 'characters')
         setContent(document.content)
         setChanges(changes)
         setStats(stats)

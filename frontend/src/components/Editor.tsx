@@ -41,9 +41,11 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const handleWordClick = (e: React.MouseEvent, position: number, word: string) => {
+    console.log('Word clicked:', word, 'at position:', position, 'canEdit:', canEdit())
     if (!canEdit()) return
     
     e.preventDefault()
+    console.log('Setting editing state: true, position:', position, 'word:', word)
     setIsEditing(true)
     setEditingPosition(position)
     setEditingContent(word)
@@ -118,134 +120,92 @@ export default function Editor({ setIsConnected }: EditorProps) {
     }
   }
 
-  const createClickableMarkdown = () => {
-    if (!content) return null
-
-    const components = {
-      h1: ({ children, ...props }: any) => (
-        <h1 className="text-3xl font-bold mt-8 mb-4 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
-            style={{ color: '#000000' }}
-            onClick={() => editSection('h1', children)} {...props}>
-          {children}
-        </h1>
-      ),
-      h2: ({ children, ...props }: any) => (
-        <h2 className="text-2xl font-semibold mt-6 mb-3 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
-            onClick={() => editSection('h2', children)} {...props}>
-          {children}
-        </h2>
-      ),
-      h3: ({ children, ...props }: any) => (
-        <h3 className="text-xl font-medium mt-4 mb-2 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
-            onClick={() => editSection('h3', children)} {...props}>
-          {children}
-        </h3>
-      ),
-      p: ({ children, ...props }: any) => (
-        <p className="mb-4 leading-relaxed cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
-           onClick={() => editSection('p', children)} {...props}>
-          {children}
-        </p>
-      ),
-      ul: ({ children, ...props }: any) => (
-        <ul className="mb-4 ml-6 list-disc cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
-            onClick={() => editSection('ul', children)} {...props}>
-          {children}
-        </ul>
-      ),
-      ol: ({ children, ...props }: any) => (
-        <ol className="mb-4 ml-6 list-decimal cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
-            onClick={() => editSection('ol', children)} {...props}>
-          {children}
-        </ol>
-      ),
-      li: ({ children, ...props }: any) => (
-        <li className="mb-1 cursor-pointer hover:bg-blue-50 p-1 rounded text-black" 
-            onClick={() => editSection('li', children)} {...props}>
-          {children}
-        </li>
-      ),
-      strong: ({ children, ...props }: any) => (
-        <strong className="font-bold cursor-pointer hover:bg-yellow-100 px-1 rounded text-black" 
-                onClick={() => editSection('strong', children)} {...props}>
-          {children}
-        </strong>
-      ),
-      em: ({ children, ...props }: any) => (
-        <em className="italic cursor-pointer hover:bg-yellow-100 px-1 rounded text-black" 
-            onClick={() => editSection('em', children)} {...props}>
-          {children}
-        </em>
-      ),
-      code: ({ children, ...props }: any) => (
-        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm cursor-pointer hover:bg-blue-100 text-black" 
-              onClick={() => editSection('code', children)} {...props}>
-          {children}
-        </code>
-      ),
-      pre: ({ children, ...props }: any) => (
-        <pre className="bg-gray-100 p-4 rounded-lg mb-4 overflow-x-auto cursor-pointer hover:bg-blue-50 text-black" 
-             onClick={() => editSection('pre', children)} {...props}>
-          {children}
-        </pre>
-      ),
+  const renderEditableContent = () => {
+    console.log('Content in Editor:', content?.length || 0, 'characters', 'isEditing:', isEditing)
+    if (!content) {
+      return <div className="p-6 text-gray-500">Loading content...</div>
     }
 
-    return (
-      <div className="text-black" style={{ color: '#000000' }}>
-        <ReactMarkdown components={components}>
-          {content}
-        </ReactMarkdown>
-      </div>
-    )
-  }
-
-  const editSection = (type: string, children: any) => {
-    if (!canEdit()) return
+    const parts = []
+    let currentPosition = 0
     
-    // Find the raw markdown for this section in the content
-    const text = typeof children === 'string' ? children : children[0] || ''
-    const position = content.indexOf(text)
+    const words = content.split(/(\s+)/)
     
-    if (position !== -1) {
-      setIsEditing(true)
-      setEditingPosition(position)
-      setEditingContent(text)
-    }
-  }
-
-  const renderContent = () => {
-    if (isEditing) {
-      return (
-        <div className="p-6">
-          <div className="mb-4 text-sm text-gray-600">
-            Editing markdown syntax:
-          </div>
-          <textarea
-            ref={inputRef as any}
+    for (let i = 0; i < words.length; i++) {
+      const part = words[i]
+      const isWhitespace = /^\s+$/.test(part)
+      
+      if (isEditing && currentPosition === editingPosition) {
+        parts.push(
+          <input
+            key={`edit-${currentPosition}`}
+            ref={inputRef}
+            type="text"
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
             onBlur={() => handleEdit(editingContent)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.ctrlKey) {
-                handleEdit(editingContent)
-              } else if (e.key === 'Escape') {
-                setIsEditing(false)
-              }
-            }}
-            className="w-full h-32 p-3 border border-blue-500 bg-blue-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 font-mono"
-            placeholder="Enter markdown syntax..."
+            onKeyDown={handleKeyPress}
+            className="inline-block border border-blue-500 bg-blue-50 px-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+            style={{ minWidth: '20px', width: `${Math.max(20, editingContent.length * 8)}px` }}
           />
-          <div className="mt-2 text-xs text-gray-500">
-            Press Ctrl+Enter to save, Escape to cancel
-          </div>
-        </div>
+        )
+      } else if (isWhitespace) {
+        parts.push(
+          <span
+            key={currentPosition}
+            className={`cursor-pointer hover:bg-yellow-100 text-black ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
+            onClick={(e) => handleSpaceClick(e, currentPosition)}
+          >
+            {part}
+          </span>
+        )
+      } else {
+        const isHighlighted = highlightedRange && 
+          currentPosition >= highlightedRange.start && 
+          currentPosition < highlightedRange.end
+        
+        parts.push(
+          <span
+            key={currentPosition}
+            className={`
+              cursor-pointer hover:bg-blue-100 px-0.5 rounded text-black font-medium
+              ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'hover:text-blue-700'}
+              ${isHighlighted ? 'bg-yellow-200 shadow-sm' : ''}
+            `}
+            onClick={(e) => handleWordClick(e, currentPosition, part)}
+          >
+            {part}
+          </span>
+        )
+      }
+      
+      currentPosition += part.length
+    }
+    
+    if (!isEditing) {
+      parts.push(
+        <span
+          key="end"
+          className={`cursor-pointer hover:bg-yellow-100 inline-block w-2 text-black ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
+          onClick={(e) => handleSpaceClick(e, currentPosition)}
+        >
+          {' '}
+        </span>
       )
     }
+    
+    return parts
+  }
 
+
+  const renderContent = () => {
     return (
-      <div className="p-6">
-        {createClickableMarkdown()}
+      <div 
+        ref={editorRef}
+        className="editor-content p-6 text-lg leading-relaxed min-h-full text-black bg-white"
+        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+      >
+        {renderEditableContent()}
       </div>
     )
   }
