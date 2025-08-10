@@ -50,9 +50,9 @@ func (h *Handler) getDocument(c *gin.Context) {
 
 	// Try to get document from database
 	var doc models.Document
-	var idStr, contentStr, createdStr, updatedStr string
+	var idStr, contentStr, createdStr, updatedStr sql.NullString
 	
-	err = h.db.QueryRow("SELECT id::text, content, created_at::text, updated_at::text FROM documents WHERE id = $1", documentID).Scan(&idStr, &contentStr, &createdStr, &updatedStr)
+	err = h.db.QueryRow("SELECT id::text, COALESCE(content, ''), created_at::text, updated_at::text FROM documents WHERE id = $1", documentID).Scan(&idStr, &contentStr, &createdStr, &updatedStr)
 	
 	if err == sql.ErrNoRows {
 		// Document doesn't exist, create it
@@ -75,9 +75,12 @@ func (h *Handler) getDocument(c *gin.Context) {
 
 	// Parse the retrieved data
 	doc.ID = documentID
-	doc.Content = contentStr
-	doc.CreatedAt, _ = time.Parse(time.RFC3339, createdStr)
-	doc.UpdatedAt, _ = time.Parse(time.RFC3339, updatedStr)
+	doc.Content = contentStr.String
+	if doc.Content == "" {
+		doc.Content = fallbackDoc.Content
+	}
+	doc.CreatedAt, _ = time.Parse(time.RFC3339, createdStr.String)
+	doc.UpdatedAt, _ = time.Parse(time.RFC3339, updatedStr.String)
 
 	c.JSON(http.StatusOK, doc)
 }

@@ -108,7 +108,7 @@ export default function ChangeHistory() {
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        {changes.length === 0 ? (
+        {!changes || changes.length === 0 ? (
           <div className="text-center py-8 px-4 text-gray-500 text-sm">
             <ClockIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p>No changes yet</p>
@@ -145,7 +145,7 @@ export default function ChangeHistory() {
                     {change.change_type} at position {change.position}
                   </div>
                   <div className="text-sm bg-white p-2 rounded border text-gray-900 font-mono">
-                    {change.content.length > 100 
+                    {change.content && change.content.length > 100 
                       ? `${change.content.slice(0, 100)}...` 
                       : change.content || '(deleted text)'}
                   </div>
