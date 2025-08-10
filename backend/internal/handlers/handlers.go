@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"regexp"
 	"time"
@@ -58,10 +59,12 @@ func (h *Handler) getDocument(c *gin.Context) {
 			doc.ID, doc.Content, doc.CreatedAt, doc.UpdatedAt,
 		)
 		if err != nil {
+			log.Printf("Failed to create document: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create document"})
 			return
 		}
 	} else if err != nil {
+		log.Printf("Failed to retrieve document: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve document"})
 		return
 	}
