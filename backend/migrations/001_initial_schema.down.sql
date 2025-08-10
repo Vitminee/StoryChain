@@ -1,0 +1,11 @@
+DROP TRIGGER IF EXISTS update_documents_updated_at ON documents;
+DROP FUNCTION IF EXISTS update_updated_at_column();
+DROP INDEX IF EXISTS idx_user_cooldowns_expires_at;
+DROP INDEX IF EXISTS idx_users_session_id;
+DROP INDEX IF EXISTS idx_changes_user_id;
+DROP INDEX IF EXISTS idx_changes_timestamp;
+DROP INDEX IF EXISTS idx_changes_document_id;
+DROP TABLE IF EXISTS user_cooldowns;
+DROP TABLE IF EXISTS changes;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS documents;
