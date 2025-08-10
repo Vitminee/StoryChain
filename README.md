@@ -49,7 +49,6 @@ cp .env.example .env
 ```env
 DATABASE_URL=postgres://username:password@localhost:5432/storychain?sslmode=disable
 FRONTEND_URL=http://localhost:3000
-JWT_SECRET=your-secret-key-here
 PORT=8080
 ```
 
