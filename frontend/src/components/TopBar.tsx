@@ -70,7 +70,7 @@ export default function TopBar({ isConnected }: TopBarProps) {
         </div>
         
         <div className="text-sm text-gray-600">
-          Real-time collaborative text editor with 30s cooldown per edit
+          Real-time collaborative text editor
         </div>
       </div>
 

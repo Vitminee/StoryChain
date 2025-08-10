@@ -41,11 +41,9 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const handleWordClick = (e: React.MouseEvent, position: number, word: string) => {
-    console.log('Word clicked:', word, 'at position:', position, 'canEdit:', canEdit())
     if (!canEdit()) return
     
     e.preventDefault()
-    console.log('Setting editing state: true, position:', position, 'word:', word)
     setIsEditing(true)
     setEditingPosition(position)
     setEditingContent(word)
@@ -121,7 +119,6 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const renderEditableContent = () => {
-    console.log('Content in Editor:', content?.length || 0, 'characters', 'isEditing:', isEditing)
     if (!content) {
       return <div className="p-6 text-gray-500">Loading content...</div>
     }
@@ -134,11 +131,12 @@ export default function Editor({ setIsConnected }: EditorProps) {
     for (let i = 0; i < words.length; i++) {
       const part = words[i]
       const isWhitespace = /^\s+$/.test(part)
+      const partStartPosition = currentPosition
       
-      if (isEditing && currentPosition === editingPosition) {
+      if (isEditing && partStartPosition === editingPosition) {
         parts.push(
           <input
-            key={`edit-${currentPosition}`}
+            key={`edit-${partStartPosition}`}
             ref={inputRef}
             type="text"
             value={editingContent}
@@ -152,27 +150,27 @@ export default function Editor({ setIsConnected }: EditorProps) {
       } else if (isWhitespace) {
         parts.push(
           <span
-            key={currentPosition}
+            key={partStartPosition}
             className={`cursor-pointer hover:bg-yellow-100 text-black ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
-            onClick={(e) => handleSpaceClick(e, currentPosition)}
+            onClick={(e) => handleSpaceClick(e, partStartPosition)}
           >
             {part}
           </span>
         )
       } else {
         const isHighlighted = highlightedRange && 
-          currentPosition >= highlightedRange.start && 
-          currentPosition < highlightedRange.end
+          partStartPosition >= highlightedRange.start && 
+          partStartPosition < highlightedRange.end
         
         parts.push(
           <span
-            key={currentPosition}
+            key={partStartPosition}
             className={`
               cursor-pointer hover:bg-blue-100 px-0.5 rounded text-black font-medium
               ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'hover:text-blue-700'}
               ${isHighlighted ? 'bg-yellow-200 shadow-sm' : ''}
             `}
-            onClick={(e) => handleWordClick(e, currentPosition, part)}
+            onClick={(e) => handleWordClick(e, partStartPosition, part)}
           >
             {part}
           </span>

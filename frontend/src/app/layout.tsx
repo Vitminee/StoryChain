@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "StoryChain - Collaborative Text Editor",
-  description: "Real-time collaborative text editor with markdown support",
+  description: "Real-time collaborative text editor",
 };
 
 export default function RootLayout({

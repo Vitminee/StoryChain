@@ -1,6 +1,6 @@
 # StoryChain - Collaborative Text Editor
 
-A real-time collaborative text editor with markdown support and 30-second cooldowns per user edit.
+A real-time collaborative text editor.
 
 ## Features
 
