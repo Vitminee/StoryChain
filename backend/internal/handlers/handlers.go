@@ -43,7 +43,7 @@ func (h *Handler) getDocument(c *gin.Context) {
 	// Create a fallback document if database fails
 	fallbackDoc := models.Document{
 		ID:        documentID,
-		Content:   "# Welcome to StoryChain\n\nThis is a collaborative text editor where you can edit text in real-time with other users.\n\n## How it works\n- Click on any word to edit it\n- Click between words or at the end to add new text\n- You get a 30-second cooldown after each edit\n- Changes are saved automatically and synced with all users\n\n## Features\n- **Real-time collaboration**: See changes from other users instantly\n- **Markdown support**: Use markdown syntax for formatting\n- **Change history**: Track all edits in the sidebar\n- **User presence**: See who's online and editing\n\nStart editing by clicking on any word above!",
+		Content:   "# Welcome to StoryChain\n\nThis is a collaborative text editor where you can edit text in real-time with other users.\n\n## How it works\n- Click on any word to edit it\n- Click between words or at the end to add new text\n- You get a 10-second cooldown after each edit\n- Changes are saved automatically and synced with all users\n\n## Features\n- **Real-time collaboration**: See changes from other users instantly\n- **Markdown support**: Use markdown syntax for formatting\n- **Change history**: Track all edits in the sidebar\n- **User presence**: See who's online and editing\n\nStart editing by clicking on any word above!",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

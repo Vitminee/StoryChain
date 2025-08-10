@@ -162,7 +162,7 @@ func (c *Client) readPump() {
 			if time.Now().Before(c.Cooldown) {
 				continue
 			}
-			c.Cooldown = time.Now().Add(30 * time.Second)
+			c.Cooldown = time.Now().Add(10 * time.Second)
 			c.Hub.Broadcast <- message
 		case "cursor_position":
 			c.Hub.Broadcast <- message

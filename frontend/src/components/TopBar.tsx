@@ -96,15 +96,8 @@ export default function TopBar({ isConnected }: TopBarProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
-          {cooldownSeconds > 0 && (
-            <div className="flex items-center space-x-1 text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-              <ClockIcon className="w-4 h-4" />
-              <span className="font-medium">{cooldownSeconds}s</span>
-            </div>
-          )}
-          
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {isEditingName ? (
               <input
                 type="text"
@@ -112,17 +105,24 @@ export default function TopBar({ isConnected }: TopBarProps) {
                 onChange={(e) => setTempName(e.target.value)}
                 onBlur={handleNameSave}
                 onKeyDown={handleKeyPress}
-                className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-800 text-white"
                 autoFocus
               />
             ) : (
               <button
                 onClick={handleNameEdit}
-                className="px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                className="px-2 py-1 text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 rounded transition-colors"
               >
                 {currentUser?.name || 'Anonymous'}
               </button>
             )}
+            
+            <div className={`font-mono text-lg font-bold ${cooldownSeconds > 0 ? 'text-red-500' : 'text-green-400'}`}>
+              {cooldownSeconds > 0 
+                ? `${String(Math.floor(cooldownSeconds / 60)).padStart(2, '0')}:${String(cooldownSeconds % 60).padStart(2, '0')}`
+                : '00:00'
+              }
+            </div>
           </div>
         </div>
       </div>

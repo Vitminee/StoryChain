@@ -26,7 +26,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editingPosition, setEditingPosition] = useState(0)
   const [editingContent, setEditingContent] = useState('')
-  const [showPreview, setShowPreview] = useState(false)
+  const [showPreview, setShowPreview] = useState(true)
   const editorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -98,7 +98,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
       })
 
       setContent(fullNewContent)
-      setCooldown(new Date(Date.now() + 30000))
+      setCooldown(new Date(Date.now() + 10000))
       
     } catch (error) {
       console.error('Failed to save change:', error)
@@ -118,134 +118,142 @@ export default function Editor({ setIsConnected }: EditorProps) {
     }
   }
 
-  const renderEditableContent = () => {
+  const createClickableMarkdown = () => {
     if (!content) return null
 
-    const parts = []
-    let currentPosition = 0
+    const components = {
+      h1: ({ children, ...props }: any) => (
+        <h1 className="text-3xl font-bold mt-8 mb-4 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
+            style={{ color: '#000000' }}
+            onClick={() => editSection('h1', children)} {...props}>
+          {children}
+        </h1>
+      ),
+      h2: ({ children, ...props }: any) => (
+        <h2 className="text-2xl font-semibold mt-6 mb-3 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
+            onClick={() => editSection('h2', children)} {...props}>
+          {children}
+        </h2>
+      ),
+      h3: ({ children, ...props }: any) => (
+        <h3 className="text-xl font-medium mt-4 mb-2 cursor-pointer hover:bg-blue-50 p-2 rounded text-black" 
+            onClick={() => editSection('h3', children)} {...props}>
+          {children}
+        </h3>
+      ),
+      p: ({ children, ...props }: any) => (
+        <p className="mb-4 leading-relaxed cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
+           onClick={() => editSection('p', children)} {...props}>
+          {children}
+        </p>
+      ),
+      ul: ({ children, ...props }: any) => (
+        <ul className="mb-4 ml-6 list-disc cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
+            onClick={() => editSection('ul', children)} {...props}>
+          {children}
+        </ul>
+      ),
+      ol: ({ children, ...props }: any) => (
+        <ol className="mb-4 ml-6 list-decimal cursor-pointer hover:bg-gray-50 p-2 rounded text-black" 
+            onClick={() => editSection('ol', children)} {...props}>
+          {children}
+        </ol>
+      ),
+      li: ({ children, ...props }: any) => (
+        <li className="mb-1 cursor-pointer hover:bg-blue-50 p-1 rounded text-black" 
+            onClick={() => editSection('li', children)} {...props}>
+          {children}
+        </li>
+      ),
+      strong: ({ children, ...props }: any) => (
+        <strong className="font-bold cursor-pointer hover:bg-yellow-100 px-1 rounded text-black" 
+                onClick={() => editSection('strong', children)} {...props}>
+          {children}
+        </strong>
+      ),
+      em: ({ children, ...props }: any) => (
+        <em className="italic cursor-pointer hover:bg-yellow-100 px-1 rounded text-black" 
+            onClick={() => editSection('em', children)} {...props}>
+          {children}
+        </em>
+      ),
+      code: ({ children, ...props }: any) => (
+        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm cursor-pointer hover:bg-blue-100 text-black" 
+              onClick={() => editSection('code', children)} {...props}>
+          {children}
+        </code>
+      ),
+      pre: ({ children, ...props }: any) => (
+        <pre className="bg-gray-100 p-4 rounded-lg mb-4 overflow-x-auto cursor-pointer hover:bg-blue-50 text-black" 
+             onClick={() => editSection('pre', children)} {...props}>
+          {children}
+        </pre>
+      ),
+    }
+
+    return (
+      <div className="text-black" style={{ color: '#000000' }}>
+        <ReactMarkdown components={components}>
+          {content}
+        </ReactMarkdown>
+      </div>
+    )
+  }
+
+  const editSection = (type: string, children: any) => {
+    if (!canEdit()) return
     
-    const words = content.split(/(\s+)/)
+    // Find the raw markdown for this section in the content
+    const text = typeof children === 'string' ? children : children[0] || ''
+    const position = content.indexOf(text)
     
-    for (let i = 0; i < words.length; i++) {
-      const part = words[i]
-      const isWhitespace = /^\s+$/.test(part)
-      
-      if (isEditing && currentPosition === editingPosition) {
-        parts.push(
-          <input
-            key={`edit-${currentPosition}`}
-            ref={inputRef}
-            type="text"
+    if (position !== -1) {
+      setIsEditing(true)
+      setEditingPosition(position)
+      setEditingContent(text)
+    }
+  }
+
+  const renderContent = () => {
+    if (isEditing) {
+      return (
+        <div className="p-6">
+          <div className="mb-4 text-sm text-gray-600">
+            Editing markdown syntax:
+          </div>
+          <textarea
+            ref={inputRef as any}
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
             onBlur={() => handleEdit(editingContent)}
-            onKeyDown={handleKeyPress}
-            className="inline-block border border-blue-500 bg-blue-50 px-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            style={{ minWidth: '20px', width: `${Math.max(20, editingContent.length * 8)}px` }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.ctrlKey) {
+                handleEdit(editingContent)
+              } else if (e.key === 'Escape') {
+                setIsEditing(false)
+              }
+            }}
+            className="w-full h-32 p-3 border border-blue-500 bg-blue-50 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 font-mono"
+            placeholder="Enter markdown syntax..."
           />
-        )
-      } else if (isWhitespace) {
-        parts.push(
-          <span
-            key={currentPosition}
-            className={`cursor-pointer hover:bg-yellow-100 text-gray-800 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
-            onClick={(e) => handleSpaceClick(e, currentPosition)}
-          >
-            {part}
-          </span>
-        )
-      } else {
-        const isHighlighted = highlightedRange && 
-          currentPosition >= highlightedRange.start && 
-          currentPosition < highlightedRange.end
-        
-        parts.push(
-          <span
-            key={currentPosition}
-            className={`
-              cursor-pointer hover:bg-blue-100 px-0.5 rounded text-gray-900 font-medium
-              ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'hover:text-blue-700'}
-              ${isHighlighted ? 'bg-yellow-200 shadow-sm' : ''}
-            `}
-            onClick={(e) => handleWordClick(e, currentPosition, part)}
-          >
-            {part}
-          </span>
-        )
-      }
-      
-      currentPosition += part.length
-    }
-    
-    if (!isEditing) {
-      parts.push(
-        <span
-          key="end"
-          className={`cursor-pointer hover:bg-yellow-100 inline-block w-2 text-gray-800 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
-          onClick={(e) => handleSpaceClick(e, currentPosition)}
-        >
-          {' '}
-        </span>
+          <div className="mt-2 text-xs text-gray-500">
+            Press Ctrl+Enter to save, Escape to cancel
+          </div>
+        </div>
       )
     }
-    
-    return parts
+
+    return (
+      <div className="p-6">
+        {createClickableMarkdown()}
+      </div>
+    )
   }
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="border-b border-gray-200 p-4 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          {!canEdit() && (
-            <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-              Cooldown active - wait to edit again
-            </div>
-          )}
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
-              showPreview 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {showPreview ? 'Edit' : 'Preview'}
-          </button>
-        </div>
-      </div>
-      
       <div className="flex-1 overflow-y-auto">
-        {showPreview ? (
-          <div className="p-6">
-            <ReactMarkdown 
-              className="prose prose-lg max-w-none"
-              components={{
-                h1: ({node, ...props}) => <h1 className="text-3xl font-bold mt-8 mb-4" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-2xl font-semibold mt-6 mb-3" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-xl font-medium mt-4 mb-2" {...props} />,
-                p: ({node, ...props}) => <p className="mb-4 leading-relaxed" {...props} />,
-                ul: ({node, ...props}) => <ul className="mb-4 ml-6 list-disc" {...props} />,
-                ol: ({node, ...props}) => <ol className="mb-4 ml-6 list-decimal" {...props} />,
-                li: ({node, ...props}) => <li className="mb-1" {...props} />,
-                code: ({node, ...props}) => <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props} />,
-                pre: ({node, ...props}) => <pre className="bg-gray-100 p-4 rounded-lg mb-4 overflow-x-auto" {...props} />,
-              }}
-            >
-              {content}
-            </ReactMarkdown>
-          </div>
-        ) : (
-          <div 
-            ref={editorRef}
-            className="editor-content p-6 font-mono text-lg leading-relaxed min-h-full text-gray-900 bg-white"
-            style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, monospace' }}
-          >
-            {renderEditableContent()}
-          </div>
-        )}
+        {renderContent()}
       </div>
     </div>
   )
