@@ -168,13 +168,6 @@ export default function Sidebar() {
 
   return (
     <aside className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-gray-900">Document Outline</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Click headings to navigate
-        </p>
-      </div>
-      
       <div className="flex-1 overflow-y-auto p-2">
         {headingTree.length === 0 ? (
           <div className="text-center py-8 text-gray-500 text-sm">

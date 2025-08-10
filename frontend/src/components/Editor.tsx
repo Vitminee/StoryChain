@@ -148,7 +148,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         parts.push(
           <span
             key={currentPosition}
-            className={`cursor-pointer hover:bg-yellow-100 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
+            className={`cursor-pointer hover:bg-yellow-100 text-gray-800 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
             onClick={(e) => handleSpaceClick(e, currentPosition)}
           >
             {part}
@@ -163,8 +163,8 @@ export default function Editor({ setIsConnected }: EditorProps) {
           <span
             key={currentPosition}
             className={`
-              cursor-pointer hover:bg-blue-100 px-0.5 rounded
-              ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}
+              cursor-pointer hover:bg-blue-100 px-0.5 rounded text-gray-900 font-medium
+              ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'hover:text-blue-700'}
               ${isHighlighted ? 'bg-yellow-200 shadow-sm' : ''}
             `}
             onClick={(e) => handleWordClick(e, currentPosition, part)}
@@ -181,7 +181,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
       parts.push(
         <span
           key="end"
-          className={`cursor-pointer hover:bg-yellow-100 inline-block w-2 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
+          className={`cursor-pointer hover:bg-yellow-100 inline-block w-2 text-gray-800 ${!canEdit() ? 'cursor-not-allowed opacity-50' : ''}`}
           onClick={(e) => handleSpaceClick(e, currentPosition)}
         >
           {' '}
@@ -196,7 +196,6 @@ export default function Editor({ setIsConnected }: EditorProps) {
     <div className="flex-1 flex flex-col">
       <div className="border-b border-gray-200 p-4 flex justify-between items-center">
         <div className="flex items-center space-x-4">
-          <h3 className="text-lg font-medium">Document</h3>
           {!canEdit() && (
             <div className="text-sm text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
               Cooldown active - wait to edit again
@@ -241,7 +240,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         ) : (
           <div 
             ref={editorRef}
-            className="editor-content p-6 font-mono text-lg leading-relaxed min-h-full"
+            className="editor-content p-6 font-mono text-lg leading-relaxed min-h-full text-gray-900 bg-white"
             style={{ fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Monaco, Consolas, monospace' }}
           >
             {renderEditableContent()}
