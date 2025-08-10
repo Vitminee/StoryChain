@@ -77,22 +77,22 @@ export default function TopBar({ isConnected }: TopBarProps) {
       <div className="flex items-center space-x-6">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center space-x-1">
-            <DocumentTextIcon className="w-4 h-4" />
-            <span className="font-medium">{stats.total_edits}</span>
-            <span className="text-gray-500">edits</span>
+            <DocumentTextIcon className="w-4 h-4 text-blue-600" />
+            <span className="font-medium text-gray-900">{stats.total_edits}</span>
+            <span className="text-gray-600">edits</span>
           </div>
           
           <div className="flex items-center space-x-1">
-            <PencilSquareIcon className="w-4 h-4" />
-            <span className="font-medium">{stats.unique_users}</span>
-            <span className="text-gray-500">editors</span>
+            <PencilSquareIcon className="w-4 h-4 text-purple-600" />
+            <span className="font-medium text-gray-900">{stats.unique_users}</span>
+            <span className="text-gray-600">editors</span>
           </div>
           
           <div className="flex items-center space-x-1">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <UsersIcon className="w-4 h-4" />
-            <span className="font-medium">{stats.online_count}</span>
-            <span className="text-gray-500">online</span>
+            <UsersIcon className="w-4 h-4 text-green-600" />
+            <span className="font-medium text-gray-900">{stats.online_count}</span>
+            <span className="text-gray-600">online</span>
           </div>
         </div>
 
