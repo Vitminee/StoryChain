@@ -26,6 +26,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editingPosition, setEditingPosition] = useState(0)
   const [editingContent, setEditingContent] = useState('')
+  const [originalContent, setOriginalContent] = useState('')
   const [showPreview, setShowPreview] = useState(true)
   const editorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -47,6 +48,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
     setIsEditing(true)
     setEditingPosition(position)
     setEditingContent(word)
+    setOriginalContent(word)
   }
 
   const handleSpaceClick = (e: React.MouseEvent, position: number) => {
@@ -56,10 +58,13 @@ export default function Editor({ setIsConnected }: EditorProps) {
     setIsEditing(true)
     setEditingPosition(position)
     setEditingContent('')
+    setOriginalContent('')
   }
 
   const handleEdit = async (newContent: string) => {
-    if (newContent === editingContent) {
+    console.log('handleEdit called with:', newContent, 'original:', originalContent)
+    if (newContent === originalContent) {
+      console.log('No change detected, exiting editing mode')
       setIsEditing(false)
       return
     }
@@ -71,18 +76,18 @@ export default function Editor({ setIsConnected }: EditorProps) {
     }
 
     const beforeText = content.slice(0, editingPosition)
-    const afterText = content.slice(editingPosition + editingContent.length)
+    const afterText = content.slice(editingPosition + originalContent.length)
     const fullNewContent = beforeText + newContent + afterText
 
     try {
-      const changeType = editingContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
+      const changeType = originalContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
       
       const change = {
         documentId,
         changeType,
         content: newContent,
         position: editingPosition,
-        length: editingContent.length,
+        length: originalContent.length,
         userID: currentUser?.id || '',
         userName: currentUser?.name || 'Anonymous'
       }
@@ -94,7 +99,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         changeType,
         content: newContent,
         position: editingPosition,
-        length: editingContent.length
+        length: originalContent.length
       })
 
       setContent(fullNewContent)
@@ -111,9 +116,12 @@ export default function Editor({ setIsConnected }: EditorProps) {
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    console.log('Key pressed:', e.key, 'editingContent:', editingContent)
     if (e.key === 'Enter') {
+      e.preventDefault()
       handleEdit(editingContent)
     } else if (e.key === 'Escape') {
+      e.preventDefault()
       setIsEditing(false)
     }
   }
@@ -141,10 +149,13 @@ export default function Editor({ setIsConnected }: EditorProps) {
             type="text"
             value={editingContent}
             onChange={(e) => setEditingContent(e.target.value)}
-            onBlur={() => handleEdit(editingContent)}
+            onBlur={() => {
+              console.log('Input blur event, editingContent:', editingContent)
+              handleEdit(editingContent)
+            }}
             onKeyDown={handleKeyPress}
             className="inline-block border border-blue-500 bg-blue-50 px-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            style={{ minWidth: '20px', width: `${Math.max(20, editingContent.length * 8)}px` }}
+            style={{ minWidth: `${Math.max(40, editingContent.length * 10 + 20)}px`, width: `${Math.max(40, editingContent.length * 10 + 20)}px` }}
           />
         )
       } else if (isWhitespace) {
