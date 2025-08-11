@@ -157,7 +157,7 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	}
 
 	// Update the document content
-	result, err := h.db.Exec(
+	_, err = h.db.Exec(
 		"UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3",
 		newDocumentContent, time.Now(), documentID,
 	)
