@@ -29,6 +29,8 @@ export default function Layout() {
         ])
 
         console.log('Document loaded:', document.content?.length || 0, 'characters')
+        console.log('Changes loaded:', changes?.length || 0, 'changes')
+        console.log('First change:', changes?.[0])
         setContent(document.content)
         setChanges(changes)
         setStats(stats)

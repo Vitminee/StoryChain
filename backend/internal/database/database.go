@@ -15,9 +15,10 @@ func Connect(databaseURL string) (*sql.DB, error) {
 	}
 
 	// Configure connection pool to prevent prepared statement issues
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(2)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetMaxOpenConns(5)
+	db.SetMaxIdleConns(1)
+	db.SetConnMaxLifetime(1 * time.Minute)
+	db.SetConnMaxIdleTime(30 * time.Second)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)

@@ -11,7 +11,7 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://localhost:5432/storychain?sslmode=disable&prefer_simple_protocol=true"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://localhost:5432/storychain?sslmode=disable&prefer_simple_protocol=true&statement_cache_mode=none"),
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 	}
 }

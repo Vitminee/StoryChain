@@ -215,6 +215,8 @@ func (h *Handler) getChanges(c *gin.Context) {
 			log.Printf("Failed to scan change: %v", err)
 			continue
 		}
+		log.Printf("Scanned change: ID=%s, Type=%s, Content=%q, UserName=%s", 
+			change.ID.String(), change.ChangeType, change.Content, change.UserName)
 		changes = append(changes, change)
 	}
 
