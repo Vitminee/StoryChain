@@ -112,6 +112,9 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
 		return
 	}
+	log.Printf("Current document content length: %d", len(currentContent))
+	log.Printf("Change details - Type: %s, Position: %d, Length: %d, Content: %q", 
+		change.ChangeType, change.Position, change.Length, change.Content)
 
 	// Calculate the new document content based on the change
 	var newDocumentContent string
@@ -157,7 +160,8 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	}
 
 	// Update the document content
-	_, err = h.db.Exec(
+	log.Printf("Updating document content from length %d to length %d", len(currentContent), len(newDocumentContent))
+	result, err := h.db.Exec(
 		"UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3",
 		newDocumentContent, time.Now(), documentID,
 	)
@@ -165,6 +169,13 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		log.Printf("Failed to update document content: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update document"})
 		return
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Failed to get rows affected: %v", err)
+	} else {
+		log.Printf("Document update affected %d rows", rowsAffected)
 	}
 
 	// Save the change to the changes table
