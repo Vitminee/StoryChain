@@ -81,23 +81,25 @@ export default function Editor({ setIsConnected }: EditorProps) {
       const changeType = originalContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
       
       const change = {
-        documentId,
-        changeType,
+        document_id: documentId,
+        change_type: changeType,
         content: newContent,
         position: editingPosition,
         length: originalContent.length,
-        userID: currentUser?.id || '',
-        userName: currentUser?.name || 'Anonymous'
+        user_id: currentUser?.id || '',
+        user_name: currentUser?.name || 'Anonymous'
       }
 
       await updateDocument(documentId, change)
       
       websocketService.sendTextChange({
-        documentId,
-        changeType,
+        documentId: documentId,
+        changeType: changeType,
         content: newContent,
         position: editingPosition,
-        length: originalContent.length
+        length: originalContent.length,
+        userID: currentUser?.id || '',
+        userName: currentUser?.name || 'Anonymous'
       })
 
       setContent(fullNewContent)

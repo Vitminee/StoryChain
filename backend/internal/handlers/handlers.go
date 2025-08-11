@@ -112,9 +112,6 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
 		return
 	}
-	log.Printf("Current document content length: %d", len(currentContent))
-	log.Printf("Change details - Type: %s, Position: %d, Length: %d, Content: %q", 
-		change.ChangeType, change.Position, change.Length, change.Content)
 
 	// Calculate the new document content based on the change
 	var newDocumentContent string
@@ -160,7 +157,6 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	}
 
 	// Update the document content
-	log.Printf("Updating document content from length %d to length %d", len(currentContent), len(newDocumentContent))
 	result, err := h.db.Exec(
 		"UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3",
 		newDocumentContent, time.Now(), documentID,
@@ -171,12 +167,6 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		return
 	}
 	
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		log.Printf("Failed to get rows affected: %v", err)
-	} else {
-		log.Printf("Document update affected %d rows", rowsAffected)
-	}
 
 	// Save the change to the changes table
 	_, err = h.db.Exec(
@@ -205,38 +195,31 @@ func (h *Handler) getChanges(c *gin.Context) {
 
 	var changes []models.Change
 	
-	// Check if changes table exists and has data
-	var count int
-	err = h.db.QueryRow("SELECT COUNT(*) FROM changes WHERE document_id = $1", docID).Scan(&count)
+	// Query changes directly without counting first
+	query := `SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`
+	rows, err := h.db.Query(query, docID)
 	if err != nil {
-		log.Printf("Failed to count changes: %v", err)
-		// Return empty array instead of error for better UX
-		c.JSON(http.StatusOK, changes)
+		log.Printf("Failed to query changes: %v", err)
+		c.JSON(http.StatusOK, changes) // Return empty array instead of error
 		return
 	}
+	defer rows.Close()
 
-	if count > 0 {
-		query := `SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`
-		rows, err := h.db.Query(query, docID)
+	for rows.Next() {
+		var change models.Change
+		err := rows.Scan(
+			&change.ID, &change.DocumentID, &change.UserID, &change.UserName,
+			&change.ChangeType, &change.Content, &change.Position, &change.Length, &change.Timestamp,
+		)
 		if err != nil {
-			log.Printf("Failed to query changes: %v", err)
-			c.JSON(http.StatusOK, changes) // Return empty array instead of error
-			return
+			log.Printf("Failed to scan change: %v", err)
+			continue
 		}
-		defer rows.Close()
+		changes = append(changes, change)
+	}
 
-		for rows.Next() {
-			var change models.Change
-			err := rows.Scan(
-				&change.ID, &change.DocumentID, &change.UserID, &change.UserName,
-				&change.ChangeType, &change.Content, &change.Position, &change.Length, &change.Timestamp,
-			)
-			if err != nil {
-				log.Printf("Failed to scan change: %v", err)
-				continue
-			}
-			changes = append(changes, change)
-		}
+	if err := rows.Err(); err != nil {
+		log.Printf("Row iteration error: %v", err)
 	}
 
 	c.JSON(http.StatusOK, changes)
