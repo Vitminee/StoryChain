@@ -86,7 +86,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         content: newContent,
         position: editingPosition,
         length: originalContent.length,
-        user_id: currentUser?.id || '',
+        user_id: currentUser?.id || '00000000-0000-0000-0000-000000000000',
         user_name: currentUser?.name || 'Anonymous'
       }
 
@@ -98,7 +98,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         content: newContent,
         position: editingPosition,
         length: originalContent.length,
-        userID: currentUser?.id || '',
+        userID: currentUser?.id || '00000000-0000-0000-0000-000000000000',
         userName: currentUser?.name || 'Anonymous'
       })
 

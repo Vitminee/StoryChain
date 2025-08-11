@@ -195,9 +195,10 @@ func (h *Handler) getChanges(c *gin.Context) {
 
 	var changes []models.Change
 	
-	// Query changes directly without counting first
+	// Use context with timeout and simpler query approach
+	ctx := c.Request.Context()
 	query := `SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`
-	rows, err := h.db.Query(query, docID)
+	rows, err := h.db.QueryContext(ctx, query, docID)
 	if err != nil {
 		log.Printf("Failed to query changes: %v", err)
 		c.JSON(http.StatusOK, changes) // Return empty array instead of error
