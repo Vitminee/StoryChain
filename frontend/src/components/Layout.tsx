@@ -5,7 +5,6 @@ import { useStore } from '@/stores/useStore'
 import websocketService from '@/lib/websocket'
 import { fetchDocument, fetchChanges, fetchStats } from '@/lib/api'
 import TopBar from './TopBar'
-import Sidebar from './Sidebar'
 import Editor from './Editor'
 import ChangeHistory from './ChangeHistory'
 
@@ -28,9 +27,6 @@ export default function Layout() {
           fetchStats()
         ])
 
-        console.log('Document loaded:', document.content?.length || 0, 'characters')
-        console.log('Changes loaded:', changes?.length || 0, 'changes')
-        console.log('First change:', changes?.[0])
         setContent(document.content)
         setChanges(changes)
         setStats(stats)
@@ -90,9 +86,7 @@ export default function Layout() {
       <TopBar isConnected={isConnected} />
       
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar />
-        
-        <main className="flex-1 flex flex-col bg-white border-x border-gray-200">
+        <main className="flex-1 flex flex-col bg-white border-r border-gray-200">
           <Editor setIsConnected={setIsConnected} />
         </main>
         

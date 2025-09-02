@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -52,13 +54,13 @@ func (h *Handler) getDocument(c *gin.Context) {
 	var doc models.Document
 	var idStr, contentStr, createdStr, updatedStr sql.NullString
 	
-	err = h.db.QueryRow("SELECT id::text, COALESCE(content, ''), created_at::text, updated_at::text FROM documents WHERE id = $1", documentID).Scan(&idStr, &contentStr, &createdStr, &updatedStr)
+	err = h.db.QueryRow("SELECT id::text, COALESCE(content, ''), created_at::text, updated_at::text FROM documents WHERE id = $1", documentID.String()).Scan(&idStr, &contentStr, &createdStr, &updatedStr)
 	
 	if err == sql.ErrNoRows {
 		// Document doesn't exist, create it
 		_, err = h.db.Exec(
 			"INSERT INTO documents (id, content, created_at, updated_at) VALUES ($1, $2, $3, $4)",
-			fallbackDoc.ID, fallbackDoc.Content, fallbackDoc.CreatedAt, fallbackDoc.UpdatedAt,
+			fallbackDoc.ID.String(), fallbackDoc.Content, fallbackDoc.CreatedAt, fallbackDoc.UpdatedAt,
 		)
 		if err != nil {
 			log.Printf("Failed to create document: %v", err)
@@ -86,18 +88,23 @@ func (h *Handler) getDocument(c *gin.Context) {
 }
 
 func (h *Handler) updateDocument(c *gin.Context) {
+	log.Printf("PUT request received for document update")
 	id := c.Param("id")
 	documentID, err := uuid.Parse(id)
 	if err != nil {
+		log.Printf("Invalid document ID: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid document ID"})
 		return
 	}
+	log.Printf("Updating document: %s", documentID.String())
 
 	var change models.TextChange
 	if err := c.ShouldBindJSON(&change); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+	log.Printf("Successfully parsed change: Type=%s, Content=%q, Position=%d", 
+		change.ChangeType, change.Content, change.Position)
 
 	if containsLinks(change.Content) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Links are not allowed in content"})
@@ -105,13 +112,15 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	}
 
 	// First, get the current document content
+	log.Printf("Getting current document content...")
 	var currentContent string
-	err = h.db.QueryRow("SELECT COALESCE(content, '') FROM documents WHERE id = $1", documentID).Scan(&currentContent)
+	err = h.db.QueryRow("SELECT COALESCE(content, '') FROM documents WHERE id = $1", documentID.String()).Scan(&currentContent)
 	if err != nil {
 		log.Printf("Failed to get current document content: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
 		return
 	}
+	log.Printf("Current content length: %d", len(currentContent))
 
 	// Calculate the new document content based on the change
 	var newDocumentContent string
@@ -157,22 +166,26 @@ func (h *Handler) updateDocument(c *gin.Context) {
 	}
 
 	// Update the document content
+	log.Printf("Updating document content...")
 	_, err = h.db.Exec(
 		"UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3",
-		newDocumentContent, time.Now(), documentID,
+		newDocumentContent, time.Now(), documentID.String(),
 	)
 	if err != nil {
 		log.Printf("Failed to update document content: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update document"})
 		return
 	}
+	log.Printf("Document content updated successfully")
 	
 
 	// Save the change to the changes table
+	log.Printf("Saving change to database...")
+	changeID := uuid.New()
 	_, err = h.db.Exec(
 		`INSERT INTO changes (id, document_id, user_id, user_name, change_type, content, position, length, timestamp)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-		uuid.New(), documentID, change.UserID, change.UserName, change.ChangeType,
+		changeID.String(), documentID.String(), change.UserID.String(), change.UserName, change.ChangeType,
 		change.Content, change.Position, change.Length, time.Now(),
 	)
 
@@ -181,7 +194,38 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save change"})
 		return
 	}
+	log.Printf("Change saved to database successfully")
 
+	// Broadcast the change to all WebSocket clients (non-blocking)
+	log.Printf("Broadcasting change to WebSocket clients...")
+	go func() {
+		wsMessage := models.WebSocketMessage{
+			Type: "text_change",
+			Data: map[string]interface{}{
+				"changeID":   changeID.String(),
+				"documentId": documentID.String(),
+				"userID":     change.UserID.String(),
+				"userName":   change.UserName,
+				"changeType": change.ChangeType,
+				"content":    change.Content,
+				"position":   change.Position,
+				"length":     change.Length,
+			},
+		}
+
+		if wsData, err := json.Marshal(wsMessage); err == nil {
+			select {
+			case h.hub.Broadcast <- wsData:
+				log.Printf("Broadcasted change to WebSocket clients: ID=%s", changeID.String())
+			default:
+				log.Printf("WebSocket broadcast channel full, skipping")
+			}
+		} else {
+			log.Printf("Failed to marshal WebSocket message: %v", err)
+		}
+	}()
+
+	log.Printf("Document update completed successfully for ID: %s", documentID.String())
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
@@ -195,16 +239,17 @@ func (h *Handler) getChanges(c *gin.Context) {
 
 	var changes []models.Change
 	
-	// Use context with timeout and simpler query approach
-	ctx := c.Request.Context()
-	query := `SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = $1 ORDER BY timestamp DESC LIMIT 50`
-	rows, err := h.db.QueryContext(ctx, query, docID)
+	// Use direct string interpolation to completely avoid prepared statements
+	log.Printf("Querying changes for document: %s", docID.String())
+	query := fmt.Sprintf("SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = '%s' ORDER BY timestamp DESC LIMIT 50", docID.String())
+	rows, err := h.db.Query(query)
 	if err != nil {
 		log.Printf("Failed to query changes: %v", err)
 		c.JSON(http.StatusOK, changes) // Return empty array instead of error
 		return
 	}
 	defer rows.Close()
+	log.Printf("Changes query executed successfully")
 
 	for rows.Next() {
 		var change models.Change
@@ -216,8 +261,6 @@ func (h *Handler) getChanges(c *gin.Context) {
 			log.Printf("Failed to scan change: %v", err)
 			continue
 		}
-		log.Printf("Scanned change: ID=%s, Type=%s, Content=%q, UserName=%s", 
-			change.ID.String(), change.ChangeType, change.Content, change.UserName)
 		changes = append(changes, change)
 	}
 

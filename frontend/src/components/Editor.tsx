@@ -20,7 +20,8 @@ export default function Editor({ setIsConnected }: EditorProps) {
     setCurrentUser,
     cooldownEnd,
     setCooldown,
-    highlightedRange
+    highlightedRange,
+    addChange
   } = useStore()
   
   const [isEditing, setIsEditing] = useState(false)
@@ -86,24 +87,25 @@ export default function Editor({ setIsConnected }: EditorProps) {
         content: newContent,
         position: editingPosition,
         length: originalContent.length,
-        user_id: currentUser?.id || '00000000-0000-0000-0000-000000000000',
+        user_id: (currentUser?.id && currentUser.id.length === 36) ? currentUser.id : '00000000-0000-0000-0000-000000000000',
         user_name: currentUser?.name || 'Anonymous'
       }
 
       await updateDocument(documentId, change)
-      
-      websocketService.sendTextChange({
-        documentId: documentId,
-        changeType: changeType,
-        content: newContent,
-        position: editingPosition,
-        length: originalContent.length,
-        userID: currentUser?.id || '00000000-0000-0000-0000-000000000000',
-        userName: currentUser?.name || 'Anonymous'
-      })
 
       setContent(fullNewContent)
       setCooldown(new Date(Date.now() + 10000))
+      
+      // Add your own change to the history immediately
+      addChange({
+        id: Date.now().toString(),
+        user_name: currentUser?.name || 'Anonymous',
+        change_type: changeType,
+        content: newContent,
+        position: editingPosition,
+        length: originalContent.length,
+        timestamp: new Date().toISOString()
+      })
       
     } catch (error) {
       console.error('Failed to save change:', error)

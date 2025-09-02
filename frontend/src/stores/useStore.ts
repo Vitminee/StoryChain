@@ -90,8 +90,32 @@ export const useStore = create<StoreState>((set, get) => ({
   setStats: (stats) => set({ stats }),
   
   // Cooldown
-  cooldownEnd: null,
-  setCooldown: (cooldownEnd) => set({ cooldownEnd }),
+  cooldownEnd: (() => {
+    try {
+      const stored = localStorage.getItem('storychain-cooldown')
+      if (stored) {
+        const cooldownDate = new Date(stored)
+        // Only use stored cooldown if it's still in the future
+        if (cooldownDate > new Date()) {
+          return cooldownDate
+        }
+        // Clean up expired cooldown
+        localStorage.removeItem('storychain-cooldown')
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    return null
+  })(),
+  setCooldown: (cooldownEnd) => {
+    set({ cooldownEnd })
+    // Persist cooldown to localStorage
+    if (cooldownEnd) {
+      localStorage.setItem('storychain-cooldown', cooldownEnd.toISOString())
+    } else {
+      localStorage.removeItem('storychain-cooldown')
+    }
+  },
   
   // UI
   selectedChangeId: null,

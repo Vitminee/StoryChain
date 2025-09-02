@@ -61,7 +61,12 @@ class WebSocketService {
         break
       
       case 'text_change':
+        console.log('WebSocket received text_change:', message.data)
+        console.log('Current user ID:', store.currentUser?.id)
+        console.log('Message user ID:', message.data.userID)
+        
         if (message.data.userID !== store.currentUser?.id) {
+          console.log('Adding change from other user to history')
           store.addChange({
             id: message.data.changeID || Date.now().toString(),
             user_name: message.data.userName,
@@ -71,6 +76,8 @@ class WebSocketService {
             length: message.data.length || 0,
             timestamp: new Date().toISOString()
           })
+        } else {
+          console.log('Skipping own change (user ID matches)')
         }
         break
       
