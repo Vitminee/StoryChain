@@ -69,11 +69,14 @@ func (h *Hub) Run() {
 			log.Printf("Client %s (%s) disconnected", client.Name, client.ID)
 
 		case message := <-h.Broadcast:
+			log.Printf("Hub broadcasting message to %d clients", len(h.Clients))
 			h.mu.RLock()
 			for client := range h.Clients {
 				select {
 				case client.Send <- message:
+					log.Printf("Message sent to client %s", client.Name)
 				default:
+					log.Printf("Failed to send to client %s, removing", client.Name)
 					close(client.Send)
 					delete(h.Clients, client)
 				}
