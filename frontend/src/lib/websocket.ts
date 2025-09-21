@@ -142,7 +142,7 @@ class WebSocketService {
         const data = (msg.data ?? {}) as Record<string, unknown>
 
         // De-duplicate by changeID if present
-        const changeId: string | undefined = data.changeID
+        const changeId: string | undefined = typeof data.changeID === 'string' ? data.changeID : undefined
         if (changeId) {
           if (this.processedChangeIds.has(changeId)) {
             break
