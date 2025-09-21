@@ -6,11 +6,7 @@ import { updateDocument } from '@/lib/api'
 import { containsLinks } from '@/lib/linkDetection'
 // Profanity check moved to backend for async moderation
 
-interface EditorProps {
-  setIsConnected: (connected: boolean) => void
-}
-
-export default function Editor({ setIsConnected }: EditorProps) {
+export default function Editor() {
   const {
     content,
     setContent,

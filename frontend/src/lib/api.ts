@@ -13,7 +13,17 @@ export async function fetchDocument(documentId: string) {
   return response.json()
 }
 
-export async function updateDocument(documentId: string, change: any) {
+export type ChangePayload = {
+  document_id: string
+  change_type: 'insert' | 'delete' | 'replace' | string
+  content: string
+  position: number
+  length: number
+  user_id: string
+  user_name: string
+}
+
+export async function updateDocument(documentId: string, change: ChangePayload) {
   const response = await fetch(`${API_BASE_URL}/api/document/${documentId}`, {
     method: 'PUT',
     headers: {

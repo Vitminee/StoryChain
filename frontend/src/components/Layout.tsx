@@ -87,7 +87,7 @@ export default function Layout() {
       
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col bg-white border-r border-gray-200">
-          <Editor setIsConnected={setIsConnected} />
+          <Editor />
         </main>
         
         <ChangeHistory />

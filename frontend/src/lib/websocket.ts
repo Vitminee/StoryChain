@@ -1,4 +1,34 @@
-import { useStore } from '@/stores/useStore'
+import { useStore, type Stats as AppStats } from '@/stores/useStore'
+
+type UserPresence = { userID: string; userName: string; status: string }
+type TextChange = {
+  changeID?: string
+  documentId?: string
+  userID?: string
+  userName?: string
+  changeType?: string
+  content?: string
+  position?: number
+  length?: number
+}
+
+function isObj(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null
+}
+
+function isPresence(x: unknown): x is UserPresence {
+  if (!isObj(x)) return false
+  return typeof x.userID === 'string'
+    && typeof x.userName === 'string'
+    && typeof x.status === 'string'
+}
+
+function isStats(x: unknown): x is AppStats {
+  if (!isObj(x)) return false
+  return typeof x.total_edits === 'number'
+    && typeof x.unique_users === 'number'
+    && typeof x.online_count === 'number'
+}
 
 class WebSocketService {
   private socket: WebSocket | null = null
@@ -8,13 +38,14 @@ class WebSocketService {
 
   private generateUuid(): string {
     // Prefer secure, standards-based UUID
-    if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
-      return (crypto as any).randomUUID()
+    const c: Crypto | undefined = typeof globalThis !== 'undefined' ? (globalThis as unknown as { crypto?: Crypto }).crypto : undefined
+    if (c?.randomUUID) {
+      return c.randomUUID()
     }
     // Fallback: UUID v4 using crypto.getRandomValues
-    if (typeof crypto !== 'undefined' && (crypto as any).getRandomValues) {
+    if (c?.getRandomValues) {
       const bytes = new Uint8Array(16)
-      ;(crypto as any).getRandomValues(bytes)
+      c.getRandomValues(bytes)
       // Per RFC 4122 version 4
       bytes[6] = (bytes[6] & 0x0f) | 0x40
       bytes[8] = (bytes[8] & 0x3f) | 0x80
@@ -96,32 +127,29 @@ class WebSocketService {
       try {
         const message = JSON.parse(event.data)
         this.handleMessage(message)
-      } catch (error) {
-        // swallow parse errors
-      }
+      } catch {}
     }
 
     return this.socket
   }
 
-  private handleMessage(message: any) {
+  private handleMessage(raw: unknown) {
     const store = useStore.getState()
     
-    switch (message.type) {
+    const msg = raw as { type?: string; data?: unknown }
+    switch (msg.type) {
       case 'user_presence':
-        if (message.data.status === 'joined') {
-          store.addOnlineUser({
-            id: message.data.userID,
-            name: message.data.userName,
-            status: 'online'
-          })
-        } else if (message.data.status === 'left') {
-          store.removeOnlineUser(message.data.userID)
+        if (isPresence(msg.data)) {
+          if (msg.data.status === 'joined') {
+            store.addOnlineUser({ id: msg.data.userID, name: msg.data.userName, status: 'online' })
+          } else if (msg.data.status === 'left') {
+            store.removeOnlineUser(msg.data.userID)
+          }
         }
         break
       
       case 'text_change': {
-        const data = message.data || {}
+        const data = (msg.data ?? {}) as Record<string, unknown>
 
         // De-duplicate by changeID if present
         const changeId: string | undefined = data.changeID
@@ -135,9 +163,9 @@ class WebSocketService {
           }
         }
 
-        const isOwn = data.userID && data.userID === store.currentUser?.id
+        const isOwn = typeof data.userID === 'string' && data.userID === store.currentUser?.id
         // Only apply for active document
-        if (data.documentId && data.documentId !== store.documentId) {
+        if (typeof data.documentId === 'string' && data.documentId !== store.documentId) {
           break
         }
 
@@ -147,11 +175,11 @@ class WebSocketService {
           const pos = Math.max(0, Math.min(Number(data.position) || 0, current.length))
           const len = Math.max(0, Math.min(Number(data.length) || 0, current.length - pos))
           let updated = current
-          switch (data.changeType) {
+          switch (String(data.changeType)) {
             case 'insert': {
               const before = current.slice(0, pos)
               const after = current.slice(pos)
-              updated = before + (data.content || '') + after
+              updated = before + (String(data.content || '')) + after
               break
             }
             case 'delete': {
@@ -163,7 +191,7 @@ class WebSocketService {
             case 'replace': {
               const before = current.slice(0, pos)
               const after = current.slice(pos + len)
-              updated = before + (data.content || '') + after
+              updated = before + (String(data.content || '')) + after
               break
             }
             default:
@@ -178,12 +206,12 @@ class WebSocketService {
         // Update change history for visibility
         if (!isOwn) {
           store.addChange({
-            id: data.changeID || Date.now().toString(),
-            user_name: data.userName,
-            change_type: data.changeType,
-            content: data.content,
-            position: data.position,
-            length: data.length || 0,
+            id: typeof data.changeID === 'string' ? data.changeID : Date.now().toString(),
+            user_name: typeof data.userName === 'string' ? data.userName : '',
+            change_type: typeof data.changeType === 'string' ? data.changeType : '',
+            content: typeof data.content === 'string' ? data.content : '',
+            position: typeof data.position === 'number' ? data.position : Number(data.position || 0),
+            length: typeof data.length === 'number' ? data.length : Number(data.length || 0),
             timestamp: new Date().toISOString()
           })
         }
@@ -191,7 +219,9 @@ class WebSocketService {
       }
       
       case 'stats_update':
-        store.setStats(message.data)
+        if (isStats(msg.data)) {
+          store.setStats(msg.data)
+        }
         break
     }
   }

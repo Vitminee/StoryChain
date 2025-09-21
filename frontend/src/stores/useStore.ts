@@ -57,7 +57,7 @@ interface StoreState {
   setHighlightedRange: (range: { start: number; end: number } | null) => void
 }
 
-export const useStore = create<StoreState>((set, get) => ({
+export const useStore = create<StoreState>((set) => ({
   // Document
   documentId: '00000000-0000-0000-0000-000000000001',
   content: '',
@@ -106,7 +106,7 @@ export const useStore = create<StoreState>((set, get) => ({
         // Clean up expired cooldown
         localStorage.removeItem('storychain-cooldown')
       }
-    } catch (e) {
+    } catch {
       // Ignore localStorage errors
     }
     return null

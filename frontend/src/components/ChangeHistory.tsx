@@ -1,6 +1,6 @@
 'use client'
 
-import { useStore } from '@/stores/useStore'
+import { useStore, type Change } from '@/stores/useStore'
 import { ClockIcon, PlusIcon, MinusIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -12,7 +12,7 @@ export default function ChangeHistory() {
     setHighlightedRange 
   } = useStore()
 
-  const handleChangeHover = (change: any) => {
+  const handleChangeHover = (change: Change) => {
     setHighlightedRange({
       start: change.position,
       end: change.position + change.length
@@ -23,7 +23,7 @@ export default function ChangeHistory() {
     setHighlightedRange(null)
   }
 
-  const handleChangeClick = (change: any) => {
+  const handleChangeClick = (change: Change) => {
     setSelectedChangeId(selectedChangeId === change.id ? null : change.id)
     
     const editor = document.querySelector('.editor-content')
@@ -116,7 +116,7 @@ export default function ChangeHistory() {
           </div>
         ) : (
           <div className="p-2 space-y-2">
-            {changes.map((change) => (
+            {changes.map((change: Change) => (
               <div
                 key={change.id}
                 className={`
