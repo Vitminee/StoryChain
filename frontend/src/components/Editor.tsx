@@ -2,11 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '@/stores/useStore'
-import websocketService from '@/lib/websocket'
 import { updateDocument } from '@/lib/api'
 import { containsLinks } from '@/lib/linkDetection'
 // Profanity check moved to backend for async moderation
-import ReactMarkdown from 'react-markdown'
 
 interface EditorProps {
   setIsConnected: (connected: boolean) => void
@@ -18,7 +16,6 @@ export default function Editor({ setIsConnected }: EditorProps) {
     setContent,
     documentId,
     currentUser,
-    setCurrentUser,
     cooldownEnd,
     setCooldown,
     highlightedRange,
@@ -29,7 +26,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
   const [editingPosition, setEditingPosition] = useState(0)
   const [editingContent, setEditingContent] = useState('')
   const [originalContent, setOriginalContent] = useState('')
-  const [showPreview, setShowPreview] = useState(true)
+  // preview state removed (unused)
   const editorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 

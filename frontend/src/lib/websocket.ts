@@ -6,6 +6,31 @@ class WebSocketService {
   private maxReconnectAttempts = 5
   private processedChangeIds = new Set<string>()
 
+  private generateUuid(): string {
+    // Prefer secure, standards-based UUID
+    if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
+      return (crypto as any).randomUUID()
+    }
+    // Fallback: UUID v4 using crypto.getRandomValues
+    if (typeof crypto !== 'undefined' && (crypto as any).getRandomValues) {
+      const bytes = new Uint8Array(16)
+      ;(crypto as any).getRandomValues(bytes)
+      // Per RFC 4122 version 4
+      bytes[6] = (bytes[6] & 0x0f) | 0x40
+      bytes[8] = (bytes[8] & 0x3f) | 0x80
+      const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0'))
+      return (
+        hex.slice(0, 4).join('') + '-' +
+        hex.slice(4, 6).join('') + '-' +
+        hex.slice(6, 8).join('') + '-' +
+        hex.slice(8, 10).join('') + '-' +
+        hex.slice(10, 16).join('')
+      )
+    }
+    // Last resort: static placeholder (should not happen in modern browsers)
+    return '00000000-0000-4000-8000-000000000000'
+  }
+
   connect(userName: string = 'Anonymous') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.hostname}:8080/api/ws?name=${encodeURIComponent(userName)}`
@@ -22,7 +47,6 @@ class WebSocketService {
     this.socket = new WebSocket(wsUrl)
 
     this.socket.onopen = () => {
-      console.log('Connected to WebSocket server')
       this.reconnectAttempts = 0
       
       const store = useStore.getState()
@@ -34,9 +58,7 @@ class WebSocketService {
       } catch {}
       const userId = existingId && existingId.length === 36
         ? existingId
-        : (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-            ? crypto.randomUUID()
-            : Math.random().toString(36).padEnd(36, '0').slice(0, 36))
+        : this.generateUuid()
       try {
         localStorage.setItem('storychain-user-id', userId)
       } catch {}
@@ -49,21 +71,17 @@ class WebSocketService {
     }
 
     this.socket.onclose = () => {
-      console.log('Disconnected from WebSocket server')
       this.handleReconnect(userName)
     }
 
-    this.socket.onerror = (error) => {
-      console.error('WebSocket error:', error)
-    }
+    this.socket.onerror = () => {}
 
     this.socket.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data)
-        console.log('WebSocket received:', message.type, message)
         this.handleMessage(message)
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
+        // swallow parse errors
       }
     }
 
@@ -165,7 +183,6 @@ class WebSocketService {
   private handleReconnect(userName: string) {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
       
       setTimeout(() => {
         this.connect(userName)

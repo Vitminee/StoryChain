@@ -100,15 +100,15 @@ func (h *Handler) updateDocument(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid document ID"})
 		return
 	}
-	log.Printf("Updating document: %s", documentID.String())
+    log.Printf("Updating document: %s", documentID.String())
 
 	var change models.TextChange
 	if err := c.ShouldBindJSON(&change); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	log.Printf("Successfully parsed change: Type=%s, Content=%q, Position=%d", 
-		change.ChangeType, change.Content, change.Position)
+    log.Printf("Parsed change: type=%s, content_len=%d, pos=%d",
+        change.ChangeType, len(change.Content), change.Position)
 
 	if containsLinks(change.Content) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Links are not allowed in content"})
@@ -331,7 +331,7 @@ func (h *Handler) getChanges(c *gin.Context) {
 	var changes []models.Change
 	
 	// Use direct string interpolation to completely avoid prepared statements
-	log.Printf("Querying changes for document: %s", docID.String())
+    log.Printf("Querying changes for document: %s", docID.String())
 	query := fmt.Sprintf("SELECT id, document_id, user_id, user_name, change_type, content, position, length, timestamp FROM changes WHERE document_id = '%s' ORDER BY timestamp DESC LIMIT 50", docID.String())
 	rows, err := h.db.Query(query)
 	if err != nil {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useStore } from '@/stores/useStore'
-import { PencilSquareIcon, UsersIcon, DocumentTextIcon, ClockIcon } from '@heroicons/react/24/outline'
+import { PencilSquareIcon, UsersIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 
 interface TopBarProps {
   isConnected: boolean

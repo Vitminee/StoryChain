@@ -1,11 +1,11 @@
 package websocket
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"sync"
-	"time"
+    "encoding/json"
+    "log"
+    "net/http"
+    "sync"
+    "time"
 
 	"storychain-backend/internal/models"
 
@@ -48,15 +48,15 @@ func NewHub() *Hub {
 }
 
 func (h *Hub) Run() {
-	for {
-		select {
-		case client := <-h.Register:
-			h.mu.Lock()
-			h.Clients[client] = true
-			h.mu.Unlock()
-			
-			h.broadcastUserPresence(client.ID, client.Name, "joined")
-			log.Printf("Client %s (%s) connected", client.Name, client.ID)
+    for {
+        select {
+        case client := <-h.Register:
+            h.mu.Lock()
+            h.Clients[client] = true
+            h.mu.Unlock()
+            
+            h.broadcastUserPresence(client.ID, client.Name, "joined")
+            log.Printf("Client (%s) connected", client.ID)
 
 		case client := <-h.Unregister:
 			h.mu.Lock()
@@ -66,8 +66,8 @@ func (h *Hub) Run() {
 			}
 			h.mu.Unlock()
 			
-			h.broadcastUserPresence(client.ID, client.Name, "left")
-			log.Printf("Client %s (%s) disconnected", client.Name, client.ID)
+            h.broadcastUserPresence(client.ID, client.Name, "left")
+            log.Printf("Client (%s) disconnected", client.ID)
 
         case message := <-h.Broadcast:
             log.Printf("Hub broadcasting message to %d clients", len(h.Clients))
@@ -88,7 +88,7 @@ func (h *Hub) Run() {
                 h.mu.Lock()
                 for _, client := range toRemove {
                     if h.Clients[client] {
-                        log.Printf("Removing slow client %s", client.Name)
+                        log.Printf("Removing slow client (%s)", client.ID)
                         close(client.Send)
                         delete(h.Clients, client)
                     }
