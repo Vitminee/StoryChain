@@ -107,8 +107,16 @@ func (h *Handler) updateDocument(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-    log.Printf("Parsed change: type=%s, content_len=%d, pos=%d",
-        change.ChangeType, len(change.Content), change.Position)
+    // Avoid logging user-provided strings; only log metrics
+    // Validate change type against allowlist to reduce taint
+    ct := change.ChangeType
+    switch ct {
+    case "insert", "delete", "replace":
+        // ok
+    default:
+        ct = "unknown"
+    }
+    log.Printf("Parsed change: type=%s, content_len=%d, pos=%d", ct, len(change.Content), change.Position)
 
 	if containsLinks(change.Content) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Links are not allowed in content"})
@@ -262,7 +270,8 @@ func (h *Handler) updateDocument(c *gin.Context) {
         }
 
         if profanityDebugEnabled() {
-            log.Printf("[Profanity] Post-check start: ctx=\"%s\"", trimForLog(ctxMsg, 160))
+            // Do not log raw user content; log only meta
+            log.Printf("[Profanity] Post-check start: ctx_len=%d", len(ctxMsg))
         }
 
         profane, err := checkProfanityHTTP(ctxMsg)
