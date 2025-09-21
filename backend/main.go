@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"storychain-backend/internal/config"
 	"storychain-backend/internal/database"
@@ -12,6 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
+
+var startTime = time.Now()
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -47,6 +51,20 @@ func main() {
 		}
 
 		c.Next()
+	})
+
+	r.GET("/status", func(c *gin.Context) {
+		uptime := time.Since(startTime).Seconds()
+		dbStatus := "ok"
+		if err := db.PingContext(c.Request.Context()); err != nil {
+			dbStatus = "error"
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":         "ok",
+			"uptime_seconds": uptime,
+			"timestamp":      time.Now().UTC().Format(time.RFC3339),
+			"database":       dbStatus,
+		})
 	})
 
 	api := r.Group("/api")
