@@ -5,6 +5,7 @@ import { useStore } from '@/stores/useStore'
 import websocketService from '@/lib/websocket'
 import { updateDocument } from '@/lib/api'
 import { containsLinks } from '@/lib/linkDetection'
+// Profanity check moved to backend for async moderation
 import ReactMarkdown from 'react-markdown'
 
 interface EditorProps {
@@ -76,15 +77,27 @@ export default function Editor({ setIsConnected }: EditorProps) {
 
     const beforeText = content.slice(0, editingPosition)
     const afterText = content.slice(editingPosition + originalContent.length)
-    const fullNewContent = beforeText + newContent + afterText
+    // If inserting a new word (originalContent is empty) and there's no
+    // whitespace before the insertion point, add a leading space so the
+    // new word doesn't stick to the previous one.
+    const needsLeadingSpace =
+      originalContent.length === 0 &&
+      editingPosition > 0 &&
+      !/\s/.test(content.charAt(editingPosition - 1)) &&
+      newContent.length > 0 &&
+      !newContent.startsWith(' ')
+    const toInsert = needsLeadingSpace ? ` ${newContent}` : newContent
+
+    // Determine change type
+    const changeType = originalContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
+
+    const fullNewContent = beforeText + toInsert + afterText
 
     try {
-      const changeType = originalContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
-      
       const change = {
         document_id: documentId,
         change_type: changeType,
-        content: newContent,
+        content: toInsert,
         position: editingPosition,
         length: originalContent.length,
         user_id: (currentUser?.id && currentUser.id.length === 36) ? currentUser.id : '00000000-0000-0000-0000-000000000000',
@@ -101,7 +114,7 @@ export default function Editor({ setIsConnected }: EditorProps) {
         id: Date.now().toString(),
         user_name: currentUser?.name || 'Anonymous',
         change_type: changeType,
-        content: newContent,
+        content: toInsert,
         position: editingPosition,
         length: originalContent.length,
         timestamp: new Date().toISOString()
@@ -109,8 +122,12 @@ export default function Editor({ setIsConnected }: EditorProps) {
       
     } catch (error) {
       console.error('Failed to save change:', error)
-      if (error instanceof Error && error.message.includes('Links are not allowed')) {
-        alert('Links are not allowed in the content!')
+      if (error instanceof Error) {
+        if (error.message.toLowerCase().includes('links are not allowed')) {
+          alert('Links are not allowed in the content!')
+        } else if (error.message.toLowerCase().includes('profanity')) {
+          alert('Profanity detected. Your change was not applied.')
+        }
       }
     }
     

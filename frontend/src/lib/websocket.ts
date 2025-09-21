@@ -4,11 +4,21 @@ class WebSocketService {
   private socket: WebSocket | null = null
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
+  private processedChangeIds = new Set<string>()
 
   connect(userName: string = 'Anonymous') {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsUrl = `${protocol}//${window.location.hostname}:8080/api/ws?name=${encodeURIComponent(userName)}`
     
+    // Prevent duplicate connections
+    if (this.socket) {
+      if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
+        return this.socket
+      }
+      try { this.socket.close() } catch {}
+      this.socket = null
+    }
+
     this.socket = new WebSocket(wsUrl)
 
     this.socket.onopen = () => {
@@ -16,8 +26,23 @@ class WebSocketService {
       this.reconnectAttempts = 0
       
       const store = useStore.getState()
+      // Ensure a stable UUID for this client so we can
+      // reliably identify "own" changes from broadcasts
+      let existingId = undefined as string | undefined
+      try {
+        existingId = localStorage.getItem('storychain-user-id') || undefined
+      } catch {}
+      const userId = existingId && existingId.length === 36
+        ? existingId
+        : (typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : Math.random().toString(36).padEnd(36, '0').slice(0, 36))
+      try {
+        localStorage.setItem('storychain-user-id', userId)
+      } catch {}
+
       store.setCurrentUser({
-        id: Math.random().toString(36).substring(7),
+        id: userId,
         name: userName,
         status: 'online'
       })
@@ -61,26 +86,75 @@ class WebSocketService {
         }
         break
       
-      case 'text_change':
-        console.log('WebSocket received text_change:', message.data)
-        console.log('Current user ID:', store.currentUser?.id)
-        console.log('Message user ID:', message.data.userID)
-        
-        if (message.data.userID !== store.currentUser?.id) {
-          console.log('Adding change from other user to history')
+      case 'text_change': {
+        const data = message.data || {}
+
+        // De-duplicate by changeID if present
+        const changeId: string | undefined = data.changeID
+        if (changeId) {
+          if (this.processedChangeIds.has(changeId)) {
+            break
+          }
+          this.processedChangeIds.add(changeId)
+          if (this.processedChangeIds.size > 1000) {
+            this.processedChangeIds = new Set(Array.from(this.processedChangeIds).slice(-500))
+          }
+        }
+
+        const isOwn = data.userID && data.userID === store.currentUser?.id
+        // Only apply for active document
+        if (data.documentId && data.documentId !== store.documentId) {
+          break
+        }
+
+        // Apply remote change to the current content for other users
+        if (!isOwn) {
+          const current = store.content || ''
+          const pos = Math.max(0, Math.min(Number(data.position) || 0, current.length))
+          const len = Math.max(0, Math.min(Number(data.length) || 0, current.length - pos))
+          let updated = current
+          switch (data.changeType) {
+            case 'insert': {
+              const before = current.slice(0, pos)
+              const after = current.slice(pos)
+              updated = before + (data.content || '') + after
+              break
+            }
+            case 'delete': {
+              const before = current.slice(0, pos)
+              const after = current.slice(pos + len)
+              updated = before + after
+              break
+            }
+            case 'replace': {
+              const before = current.slice(0, pos)
+              const after = current.slice(pos + len)
+              updated = before + (data.content || '') + after
+              break
+            }
+            default:
+              // Unknown type, do nothing
+              break
+          }
+          if (updated !== current) {
+            store.setContent(updated)
+          }
+        }
+
+        // Update change history for visibility
+        if (!isOwn) {
           store.addChange({
-            id: message.data.changeID || Date.now().toString(),
-            user_name: message.data.userName,
-            change_type: message.data.changeType,
-            content: message.data.content,
-            position: message.data.position,
-            length: message.data.length || 0,
+            id: data.changeID || Date.now().toString(),
+            user_name: data.userName,
+            change_type: data.changeType,
+            content: data.content,
+            position: data.position,
+            length: data.length || 0,
             timestamp: new Date().toISOString()
           })
-        } else {
-          console.log('Skipping own change (user ID matches)')
         }
         break
+      }
       
       case 'stats_update':
         store.setStats(message.data)

@@ -80,9 +80,13 @@ export const useStore = create<StoreState>((set, get) => ({
   
   // Changes
   changes: [],
-  addChange: (change) => set((state) => ({
-    changes: [change, ...state.changes].slice(0, 50)
-  })),
+  addChange: (change) => set((state) => {
+    // Avoid duplicates by id
+    if (state.changes.some((c) => c.id === change.id)) {
+      return { changes: state.changes }
+    }
+    return { changes: [change, ...state.changes].slice(0, 50) }
+  }),
   setChanges: (changes) => set({ changes }),
   
   // Stats

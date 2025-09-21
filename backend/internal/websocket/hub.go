@@ -30,20 +30,21 @@ type Client struct {
 }
 
 type Hub struct {
-	Clients    map[*Client]bool
-	Broadcast  chan []byte
-	Register   chan *Client
-	Unregister chan *Client
-	mu         sync.RWMutex
+    Clients    map[*Client]bool
+    Broadcast  chan []byte
+    Register   chan *Client
+    Unregister chan *Client
+    mu         sync.RWMutex
 }
 
 func NewHub() *Hub {
-	return &Hub{
-		Clients:    make(map[*Client]bool),
-		Broadcast:  make(chan []byte),
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-	}
+    return &Hub{
+        Clients:    make(map[*Client]bool),
+        // Buffer broadcasts to avoid dropping messages and to decouple producers
+        Broadcast:  make(chan []byte, 256),
+        Register:   make(chan *Client),
+        Unregister: make(chan *Client),
+    }
 }
 
 func (h *Hub) Run() {
@@ -68,22 +69,34 @@ func (h *Hub) Run() {
 			h.broadcastUserPresence(client.ID, client.Name, "left")
 			log.Printf("Client %s (%s) disconnected", client.Name, client.ID)
 
-		case message := <-h.Broadcast:
-			log.Printf("Hub broadcasting message to %d clients", len(h.Clients))
-			h.mu.RLock()
-			for client := range h.Clients {
-				select {
-				case client.Send <- message:
-					log.Printf("Message sent to client %s", client.Name)
-				default:
-					log.Printf("Failed to send to client %s, removing", client.Name)
-					close(client.Send)
-					delete(h.Clients, client)
-				}
-			}
-			h.mu.RUnlock()
-		}
-	}
+        case message := <-h.Broadcast:
+            log.Printf("Hub broadcasting message to %d clients", len(h.Clients))
+            // Send to all clients; collect any that need removal, then remove under write lock
+            var toRemove []*Client
+            h.mu.RLock()
+            for client := range h.Clients {
+                select {
+                case client.Send <- message:
+                    // ok
+                default:
+                    // Client's send buffer is full; mark for removal
+                    toRemove = append(toRemove, client)
+                }
+            }
+            h.mu.RUnlock()
+            if len(toRemove) > 0 {
+                h.mu.Lock()
+                for _, client := range toRemove {
+                    if h.Clients[client] {
+                        log.Printf("Removing slow client %s", client.Name)
+                        close(client.Send)
+                        delete(h.Clients, client)
+                    }
+                }
+                h.mu.Unlock()
+            }
+        }
+    }
 }
 
 func (h *Hub) GetOnlineCount() int {
