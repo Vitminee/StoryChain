@@ -1,6 +1,9 @@
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-production-api.com' 
-  : 'http://localhost:8080'
+// Prefer environment-configured base URL; fallback to localhost:8080
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8080`
+    : 'http://localhost:8080')
 
 export async function fetchDocument(documentId: string) {
   const response = await fetch(`${API_BASE_URL}/api/document/${documentId}`)

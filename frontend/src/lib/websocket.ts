@@ -32,8 +32,24 @@ class WebSocketService {
   }
 
   connect(userName: string = 'Anonymous') {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.hostname}:8080/api/ws?name=${encodeURIComponent(userName)}`
+    // Build WS URL from env when provided, else derive from API base/host
+    let wsUrl = ''
+    const configured = process.env.NEXT_PUBLIC_WS_URL
+    if (configured && /^wss?:\/\//i.test(configured)) {
+      wsUrl = `${configured.replace(/\/?$/, '')}?name=${encodeURIComponent(userName)}`
+    } else {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL
+      try {
+        const base = new URL(
+          apiBase || `${window.location.protocol}//${window.location.hostname}:8080`
+        )
+        const wsProtocol = base.protocol === 'https:' ? 'wss:' : 'ws:'
+        wsUrl = `${wsProtocol}//${base.host}/api/ws?name=${encodeURIComponent(userName)}`
+      } catch {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+        wsUrl = `${wsProtocol}//${window.location.hostname}:8080/api/ws?name=${encodeURIComponent(userName)}`
+      }
+    }
     
     // Prevent duplicate connections
     if (this.socket) {
