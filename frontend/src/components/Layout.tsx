@@ -10,6 +10,7 @@ import ChangeHistory from './ChangeHistory'
 
 export default function Layout() {
   const [isConnected, setIsConnected] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const { 
     documentId, 
     setContent, 
@@ -21,6 +22,7 @@ export default function Layout() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        setIsLoading(true)
         const [document, changes, stats] = await Promise.all([
           fetchDocument(documentId),
           fetchChanges(documentId),
@@ -32,6 +34,8 @@ export default function Layout() {
         setStats(stats)
       } catch (error) {
         console.error('Failed to load initial data:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -87,7 +91,7 @@ export default function Layout() {
       
       <div className="flex-1 flex overflow-hidden">
         <main className="flex-1 flex flex-col bg-white border-r border-gray-200">
-          <Editor />
+          <Editor isLoading={isLoading} />
         </main>
         
         <ChangeHistory />
@@ -95,3 +99,4 @@ export default function Layout() {
     </div>
   )
 }
+

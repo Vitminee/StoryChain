@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { useStore } from '@/stores/useStore'
 import { updateDocument } from '@/lib/api'
 import { containsLinks } from '@/lib/linkDetection'
 // Profanity check moved to backend for async moderation
 
-export default function Editor() {
+interface EditorProps {
+  isLoading: boolean
+}
+
+export default function Editor({ isLoading }: EditorProps) {
   const {
     content,
     setContent,
@@ -17,12 +21,11 @@ export default function Editor() {
     highlightedRange,
     addChange
   } = useStore()
-  
+
   const [isEditing, setIsEditing] = useState(false)
   const [editingPosition, setEditingPosition] = useState(0)
   const [editingContent, setEditingContent] = useState('')
   const [originalContent, setOriginalContent] = useState('')
-  // preview state removed (unused)
   const editorRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -38,7 +41,7 @@ export default function Editor() {
 
   const handleWordClick = (e: React.MouseEvent, position: number, word: string) => {
     if (!canEdit()) return
-    
+
     e.preventDefault()
     setIsEditing(true)
     setEditingPosition(position)
@@ -48,7 +51,7 @@ export default function Editor() {
 
   const handleSpaceClick = (e: React.MouseEvent, position: number) => {
     if (!canEdit()) return
-    
+
     e.preventDefault()
     setIsEditing(true)
     setEditingPosition(position)
@@ -70,9 +73,6 @@ export default function Editor() {
 
     const beforeText = content.slice(0, editingPosition)
     const afterText = content.slice(editingPosition + originalContent.length)
-    // If inserting a new word (originalContent is empty) and there's no
-    // whitespace before the insertion point, add a leading space so the
-    // new word doesn't stick to the previous one.
     const needsLeadingSpace =
       originalContent.length === 0 &&
       editingPosition > 0 &&
@@ -81,9 +81,7 @@ export default function Editor() {
       !newContent.startsWith(' ')
     const toInsert = needsLeadingSpace ? ` ${newContent}` : newContent
 
-    // Determine change type
     const changeType = originalContent === '' ? 'insert' : newContent === '' ? 'delete' : 'replace'
-
     const fullNewContent = beforeText + toInsert + afterText
 
     try {
@@ -101,8 +99,7 @@ export default function Editor() {
 
       setContent(fullNewContent)
       setCooldown(new Date(Date.now() + 10000))
-      
-      // Add your own change to the history immediately
+
       addChange({
         id: Date.now().toString(),
         user_name: currentUser?.name || 'Anonymous',
@@ -112,18 +109,18 @@ export default function Editor() {
         length: originalContent.length,
         timestamp: new Date().toISOString()
       })
-      
     } catch (error) {
       console.error('Failed to save change:', error)
       if (error instanceof Error) {
-        if (error.message.toLowerCase().includes('links are not allowed')) {
+        const message = error.message.toLowerCase()
+        if (message.includes('links are not allowed')) {
           alert('Links are not allowed in the content!')
-        } else if (error.message.toLowerCase().includes('profanity')) {
+        } else if (message.includes('profanity')) {
           alert('Profanity detected. Your change was not applied.')
         }
       }
     }
-    
+
     setIsEditing(false)
   }
 
@@ -137,21 +134,40 @@ export default function Editor() {
     }
   }
 
+  const renderSkeleton = () => {
+    const widths = ['100%', '92%', '85%', '70%']
+    const lineStyle = (idx: number): CSSProperties => ({
+      animationDelay: `${idx * 80}ms`,
+      width: widths[idx % widths.length]
+    })
+
+    return (
+      <div className="p-6 space-y-4">
+        {Array.from({ length: 8 }).map((_, idx) => (
+          <div
+            key={idx}
+            className="h-5 rounded bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"
+            style={lineStyle(idx)}
+          />
+        ))}
+      </div>
+    )
+  }
+
   const renderEditableContent = () => {
     if (!content) {
-      return <div className="p-6 text-gray-500">Loading content...</div>
+      return <div className="p-6 text-gray-500">This document is empty. Start editing!</div>
     }
 
-    const parts = []
+    const parts: ReactNode[] = []
     let currentPosition = 0
-    
     const words = content.split(/(\s+)/)
-    
+
     for (let i = 0; i < words.length; i++) {
       const part = words[i]
       const isWhitespace = /^\s+$/.test(part)
       const partStartPosition = currentPosition
-      
+
       if (isEditing && partStartPosition === editingPosition) {
         parts.push(
           <input
@@ -177,10 +193,10 @@ export default function Editor() {
           </span>
         )
       } else {
-        const isHighlighted = highlightedRange && 
-          partStartPosition >= highlightedRange.start && 
+        const isHighlighted = highlightedRange &&
+          partStartPosition >= highlightedRange.start &&
           partStartPosition < highlightedRange.end
-        
+
         parts.push(
           <span
             key={partStartPosition}
@@ -195,10 +211,10 @@ export default function Editor() {
           </span>
         )
       }
-      
+
       currentPosition += part.length
     }
-    
+
     if (!isEditing) {
       parts.push(
         <span
@@ -210,28 +226,26 @@ export default function Editor() {
         </span>
       )
     }
-    
+
     return parts
   }
 
-
-  const renderContent = () => {
-    return (
-      <div 
-        ref={editorRef}
-        className="editor-content p-6 text-lg leading-relaxed min-h-full text-black bg-white"
-        style={{ fontFamily: 'system-ui, -apple-system, sans-serif', whiteSpace: 'pre-wrap' }}
-      >
-        {renderEditableContent()}
-      </div>
-    )
-  }
+  const renderContent = () => (
+    <div
+      ref={editorRef}
+      className="editor-content p-6 text-lg leading-relaxed min-h-full text-black bg-white"
+      style={{ fontFamily: 'system-ui, -apple-system, sans-serif', whiteSpace: 'pre-wrap' }}
+    >
+      {renderEditableContent()}
+    </div>
+  )
 
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex-1 overflow-y-auto">
-        {renderContent()}
+        {isLoading ? renderSkeleton() : renderContent()}
       </div>
     </div>
   )
 }
+
