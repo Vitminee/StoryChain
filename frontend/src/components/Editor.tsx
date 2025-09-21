@@ -220,7 +220,7 @@ export default function Editor() {
       <div 
         ref={editorRef}
         className="editor-content p-6 text-lg leading-relaxed min-h-full text-black bg-white"
-        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+        style={{ fontFamily: 'system-ui, -apple-system, sans-serif', whiteSpace: 'pre-wrap' }}
       >
         {renderEditableContent()}
       </div>
