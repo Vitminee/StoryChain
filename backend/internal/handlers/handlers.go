@@ -118,21 +118,21 @@ func (h *Handler) updateDocument(c *gin.Context) {
     }
     log.Printf("Parsed change: type=%s, content_len=%d, pos=%d", ct, len(change.Content), change.Position)
 
-	if containsLinks(change.Content) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Links are not allowed in content"})
-		return
-	}
+    if containsLinks(change.Content) {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Links are not allowed in content"})
+        return
+    }
 
-	// First, get the current document content
-	log.Printf("Getting current document content...")
-	var currentContent string
-	err = h.db.QueryRow("SELECT COALESCE(content, '') FROM documents WHERE id = $1", documentID.String()).Scan(&currentContent)
-	if err != nil {
-		log.Printf("Failed to get current document content: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
-		return
-	}
-	log.Printf("Current content length: %d", len(currentContent))
+    // First, get the current document content
+    log.Print("Retrieving current document content")
+    var currentContent string
+    err = h.db.QueryRow("SELECT COALESCE(content, '') FROM documents WHERE id = $1", documentID.String()).Scan(&currentContent)
+    if err != nil {
+        log.Print("Failed to get current document content")
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get document content"})
+        return
+    }
+    log.Printf("Current content length: %d", len(currentContent))
 
     // Calculate the new document content based on the change
     originalContent := currentContent
