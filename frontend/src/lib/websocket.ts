@@ -1,16 +1,6 @@
 import { useStore, type Stats as AppStats } from '@/stores/useStore'
 
 type UserPresence = { userID: string; userName: string; status: string }
-type TextChange = {
-  changeID?: string
-  documentId?: string
-  userID?: string
-  userName?: string
-  changeType?: string
-  content?: string
-  position?: number
-  length?: number
-}
 
 function isObj(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null
